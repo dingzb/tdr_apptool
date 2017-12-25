@@ -54,8 +54,10 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
         self.CancelDlgStat = False
         self.debugEnable = False
         self.localAppDir = ''
-        self.IPhistory = ['192.100.10.1']
-        self.comboBox.addItems(self.IPhistory)
+        # self.IPhistory = ['192.100.10.1']
+        # self.comboBox.addItems(self.IPhistory)
+        self.sshClient = paramiko.SSHClient()
+        self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     def AppendLog(self, str):
         self.logEdit.append(str)
@@ -556,68 +558,79 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
             self.UDiskBar.show()
 
     def Connect(self, afterUpFw=False):
+        try:
+            self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()), str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
+        except Exception, e:
+            print(str(e))
+        self.logEdit.append('SSH Connect %s:%d!' % (str(self.lineEditIp.text()), int(self.lineEditPort.text())))
+        self.ConnectButton.setText(u'已连接')
+        self.setWindowTitle(str(self.lineEditIp.text()))
+        self.connectStat = True
+        self.ButtonEnble(stat=True)
         # self.targetIp=self.TargetIPLlineEdit.text()
 
-        self.targetIp = self.comboBox.currentText()
+        # self.targetIp = self.comboBox.currentText()
         # print IPhistory
-        if self.targetIp in self.IPhistory:
-            print ''
-        else:
-            self.IPhistory.append(self.targetIp)
-            self.comboBox.insertItem(0, self.targetIp)
-            self.comboBox.update()
+        # if self.targetIp in self.IPhistory:
+        #     print ''
+        # else:
+        #     self.IPhistory.append(self.targetIp)
+        #     self.comboBox.insertItem(0, self.targetIp)
+        #     self.comboBox.update()
 
         # if self.targetIp.indexOf('192.100.10.1') > -1:
         #   targetUrl=str('http://' + self.targetIp + ':8008/api/bkdprivi.lua?act=put&bkdon=1')
         # else:
         #    targetUrl = str('http://' + self.targetIp + ':38008/api/bkdprivi.lua?act=put&bkdon=1')
-        self.logEdit.append('Connecting ' + self.targetIp)
-        self.ConnectButton.setText(u'连接中')
-        self.repaint()
-
-        proDlg = QtGui.QProgressDialog(self)
-        proDlg.setMinimum(0)
-        proDlg.setMaximum(100)
-        proDlg.setFixedWidth(400)
-        if afterUpFw == False:
-            proDlg.setWindowTitle(u'连接中')
-            proDlg.setCancelButtonText(u'取消')
-        else:
-            proDlg.setWindowTitle(u'升级中')
-            proDlg.setCancelButton(None)
-            proDlg.setLabelText(u'正在升级，完成后会自动重启，请不要断电')
-        proDlg.setAutoClose(True)
-        proDlg.setWindowModality(1)
-        proDlg.show()
-
-        # enable ssh service of target
-        from scpThread import EnableSSH
-        self.EnableSshThread = EnableSSH(args=self.targetIp)
-        self.EnableSshThread.finished.connect(self.GetInfo)
-        self.EnableSshThread.percSignal.connect(proDlg.setValue)
-        proDlg.canceled.connect(self.EnableSshThread.stop)
-        self.EnableSshThread.start()
+        # self.logEdit.append('Connecting ' + self.targetIp)
+        # self.ConnectButton.setText(u'连接中')
+        # self.repaint()
+        #
+        # proDlg = QtGui.QProgressDialog(self)
+        # proDlg.setMinimum(0)
+        # proDlg.setMaximum(100)
+        # proDlg.setFixedWidth(400)
+        # if afterUpFw == False:
+        #     proDlg.setWindowTitle(u'连接中')
+        #     proDlg.setCancelButtonText(u'取消')
+        # else:
+        #     proDlg.setWindowTitle(u'升级中')
+        #     proDlg.setCancelButton(None)
+        #     proDlg.setLabelText(u'正在升级，完成后会自动重启，请不要断电')
+        # proDlg.setAutoClose(True)
+        # proDlg.setWindowModality(1)
+        # proDlg.show()
+        # self.GetInfo()
+        # # enable ssh service of target
+        # from scpThread import EnableSSH
+        # self.EnableSshThread = EnableSSH(args=self.targetIp)
+        # self.EnableSshThread.finished.connect(self.GetInfo)
+        # self.EnableSshThread.percSignal.connect(proDlg.setValue)
+        # proDlg.canceled.connect(self.EnableSshThread.stop)
+        # self.EnableSshThread.start()
 
     def GetInfo(self):
         # enable ssh is cancelled
-        if self.EnableSshThread.stopped == True:
-            return
+        # if self.EnableSshThread.stopped == True:
+        #     return
 
         # get a ssh client
-        self.sshClient = paramiko.SSHClient()
-        self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        target_port = 22
-        try:
-            self.sshClient.connect(str(self.targetIp), target_port, target_user, target_passwd)
-        except Exception, e:
-            target_port = 22122
-            self.sshClient.connect(str(self.targetIp), target_port, target_user, target_passwd)
+        # self.sshClient = paramiko.SSHClient()
+        # self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # target_port = 22
+        # try:
+        #     self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()), str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
+        # except Exception, e:
+        #     print(str(e))
+        #     pass
+            # target_port = 22122
+            # self.sshClient.connect(str(self.targetIp), target_port, target_user, target_passwd)
 
-        self.logEdit.append('SSH Connect %s:%d!' % (str(self.targetIp), target_port))
-        self.ConnectButton.setText(u'已连接')
-        self.setWindowTitle(self.targetIp)
-        self.connectStat = True
-        self.ButtonEnble(stat=True)
+        # self.logEdit.append('SSH Connect %s:%d!' % (str(self.lineEditIp.text()), int(self.lineEditPort.text())))
+        # self.ConnectButton.setText(u'已连接')
+        # self.setWindowTitle(str(self.lineEditIp.text()))
+        # self.connectStat = True
+        # self.ButtonEnble(stat=True)
 
         # get firmware version
         cmd = 'cat /etc/openwrt_version'
@@ -740,11 +753,11 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
         cmd = 'uci show system.initdone'
         stdin, stdout, stderr = self.sshClient.exec_command(cmd)
         outstr = stdout.read()
-        self.initDone = int(outstr[outstr.find('=') + 1:])
-        if self.initDone == 1:
-            self.InitDoneButton.setText(u'跳过快速设置')
-        if self.initDone == 0:
-            self.InitDoneButton.setText(u'快速设置必须')
+        # self.initDone = int(outstr[outstr.find('=') + 1:])
+        # if self.initDone == 1:
+        #     self.InitDoneButton.setText(u'跳过快速设置')
+        # if self.initDone == 0:
+        #     self.InitDoneButton.setText(u'快速设置必须')
 
 
 if __name__ == "__main__":
