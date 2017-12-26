@@ -1,0 +1,26 @@
+{
+  "info": {
+    "network": "uci show tdripcfg | grep tdripcfg | grep -v data",
+    "version": "uci show tdripcfg | grep ':' | grep -v tdripcfg | grep -v 'usb list info' | grep -v 'Bus'",
+    "usb": "lsusb"
+  },
+  "setting": {
+    "network": {
+      "set": "uci set {:s}='{:s}'",
+      "commit": "uci commit tdripcfg"
+    }
+  },
+  "keys": {
+    "setting": {
+      "network": {
+        "upgradeIp": "tdripcfg.tdripcfg.upgradeip",
+        "upgradePort": "tdripcfg.tdripcfg.upgradeport",
+        "operationIp": "tdripcfg.tdripcfg.operationip",
+        "operationPort": "tdripcfg.tdripcfg.operationport",
+        "idcardIp": "tdripcfg.tdripcfg.idcardip",
+        "idcardPort": "tdripcfg.tdripcfg.idcardport",
+        "logsrvUrl": "tdripcfg.tdripcfg.logsrvurl"
+      }
+    }
+  }
+}

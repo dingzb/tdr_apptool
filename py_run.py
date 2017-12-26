@@ -3,6 +3,8 @@ import binascii
 import os
 import sys
 
+import re
+
 reload(sys)
 sys.setdefaultencoding('utf8')
 import time
@@ -18,46 +20,49 @@ target_port = 22
 target_passwd = 't0d7r19tdr'
 
 
-class MyApp(QtGui.QMainWindow, Ui_Dialog):
+class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        Ui_Dialog.__init__(self)
+        Ui_MainWindow.__init__(self)
         self.setupUi(self)
         self.ConnectButton.clicked.connect(self.Connect)
         self.connectStat = False
-        self.FwUpgradeButton.clicked.connect(self.FwUpgrade)
-        self.SetSnButton.clicked.connect(self.SetSn)
-        self.SetResetSnButton.clicked.connect(self.SetResetSn)
-        self.ResetButton.clicked.connect(self.Reset)
-        self.RebootButton.clicked.connect(self.Reboot)
-        self.HaltButton.clicked.connect(self.Halt)
-        self.SetSSIDButton.clicked.connect(self.SetSSID)
-        self.SetPasswdButton.clicked.connect(self.SetPasswd)
+        self.pushButtonSaveServer.clicked.connect(self.set_network)
+        # self.FwUpgradeButton.clicked.connect(self.FwUpgrade)
+        # self.SetSnButton.clicked.connect(self.SetSn)
+        # self.SetResetSnButton.clicked.connect(self.SetResetSn)
+        # self.ResetButton.clicked.connect(self.Reset)
+        # self.RebootButton.clicked.connect(self.Reboot)
+        # self.HaltButton.clicked.connect(self.Halt)
+        # self.SetSSIDButton.clicked.connect(self.SetSSID)
+        # self.SetPasswdButton.clicked.connect(self.SetPasswd)
         self.CmdlineEdit.returnPressed.connect(self.RunCmd)
-        self.UpdateUdiskButton.clicked.connect(self.UpdateApp)
-        self.RestartNetworkButton.clicked.connect(self.RestartNetWork)
-        self.ClearSqliteButton.clicked.connect(self.ClearSqlite)
-        self.CheckUDiskButton.clicked.connect(self.CheckUDisk)
-        self.SetMacButton.clicked.connect(self.SetMac)
-        self.SaveLogButton.clicked.connect(self.SaveLog)
-        self.DebugStatButton.clicked.connect(self.SetDebugStat)
-        self.FormatUDiskButton.clicked.connect(self.FormatUDisk)
-        self.InitDoneButton.clicked.connect(self.InitDoneToggle)
-        self.CheckAppButton.clicked.connect(self.CheckApp)
-        self.AppButton.clicked.connect(self.SelecApp)
-        self.DelAppButton.clicked.connect(self.DelApp)
-        self.UDiskBar.hide()
-        self.ButtonEnble(stat=False)
-        self.AppMd5CheckBox.setChecked(True)
-        self.updateAppFail = ''
-        self.CancelDlg = QtGui.QMessageBox()
-        self.CancelDlgStat = False
-        self.debugEnable = False
-        self.localAppDir = ''
+        # self.UpdateUdiskButton.clicked.connect(self.UpdateApp)
+        # self.RestartNetworkButton.clicked.connect(self.RestartNetWork)
+        # self.ClearSqliteButton.clicked.connect(self.ClearSqlite)
+        # self.CheckUDiskButton.clicked.connect(self.CheckUDisk)
+        # self.SetMacButton.clicked.connect(self.SetMac)
+        # self.SaveLogButton.clicked.connect(self.SaveLog)
+        # self.DebugStatButton.clicked.connect(self.SetDebugStat)
+        # self.FormatUDiskButton.clicked.connect(self.FormatUDisk)
+        # self.InitDoneButton.clicked.connect(self.InitDoneToggle)
+        # self.CheckAppButton.clicked.connect(self.CheckApp)
+        # self.AppButton.clicked.connect(self.SelecApp)
+        # self.DelAppButton.clicked.connect(self.DelApp)
+        # self.UDiskBar.hide()
+        # self.ButtonEnble(stat=False)
+        # self.AppMd5CheckBox.setChecked(True)
+        # self.updateAppFail = ''
+        # self.CancelDlg = QtGui.QMessageBox()
+        # self.CancelDlgStat = False
+        # self.debugEnable = False
+        # self.localAppDir = ''
         # self.IPhistory = ['192.100.10.1']
         # self.comboBox.addItems(self.IPhistory)
         self.sshClient = paramiko.SSHClient()
         self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        with open('shell.json') as jsonFile:
+            self.shellJson = json.load(jsonFile, encoding='utf8')
 
     def AppendLog(self, str):
         self.logEdit.append(str)
@@ -343,38 +348,39 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
         return 0
 
     def ButtonEnble(self, stat):
-        self.DebugStatButton.setEnabled(stat)
-        self.FwUpgradeButton.setEnabled(stat)
-        self.SetSnButton.setEnabled(stat)
-        self.SetResetSnButton.setEnabled(stat)
-        self.RebootButton.setEnabled(stat)
-        self.HaltButton.setEnabled(stat)
-        self.SetSSIDButton.setEnabled(stat)
-        self.SetPasswdButton.setEnabled(stat)
-        self.UpdateUdiskButton.setEnabled(stat)
-        self.ResetButton.setEnabled(stat)
-        self.RestartNetworkButton.setEnabled(stat)
-        self.ClearSqliteButton.setEnabled(stat)
-        self.CheckUDiskButton.setEnabled(stat)
-        self.AppMd5CheckBox.setEnabled(stat)
-        self.SetMacButton.setEnabled(stat)
-        self.SaveLogButton.setEnabled(stat)
-        self.FormatUDiskButton.setEnabled(stat)
-        self.InitDoneButton.setEnabled(stat)
-        self.CheckAppButton.setEnabled(stat)
-        self.DelAppButton.setEnabled(stat)
-        self.AppButton.setEnabled(stat)
-
-        if not stat:
-            self.FwVersionlineEdit.setText('')
-            self.SnlineEdit.setText('')
-            self.ResetSnlineEdit.setText('')
-            self.SSIDlineEdit.setText('')
-            self.PasswdlineEdit.setText('')
-            self.WanSSIDlineEdit.setText('')
-            self.AthMaclineEdit.setText('')
-            self.LanMaclineEdit.setText('')
-            self.WanMaclineEdit.setText('')
+        pass
+        # self.DebugStatButton.setEnabled(stat)
+        # self.FwUpgradeButton.setEnabled(stat)
+        # self.SetSnButton.setEnabled(stat)
+        # self.SetResetSnButton.setEnabled(stat)
+        # self.RebootButton.setEnabled(stat)
+        # self.HaltButton.setEnabled(stat)
+        # self.SetSSIDButton.setEnabled(stat)
+        # self.SetPasswdButton.setEnabled(stat)
+        # self.UpdateUdiskButton.setEnabled(stat)
+        # self.ResetButton.setEnabled(stat)
+        # self.RestartNetworkButton.setEnabled(stat)
+        # self.ClearSqliteButton.setEnabled(stat)
+        # self.CheckUDiskButton.setEnabled(stat)
+        # self.AppMd5CheckBox.setEnabled(stat)
+        # self.SetMacButton.setEnabled(stat)
+        # self.SaveLogButton.setEnabled(stat)
+        # self.FormatUDiskButton.setEnabled(stat)
+        # self.InitDoneButton.setEnabled(stat)
+        # self.CheckAppButton.setEnabled(stat)
+        # self.DelAppButton.setEnabled(stat)
+        # self.AppButton.setEnabled(stat)
+        #
+        # if not stat:
+        #     self.FwVersionlineEdit.setText('')
+        #     self.SnlineEdit.setText('')
+        #     self.ResetSnlineEdit.setText('')
+        #     self.SSIDlineEdit.setText('')
+        #     self.PasswdlineEdit.setText('')
+        #     self.WanSSIDlineEdit.setText('')
+        #     self.AthMaclineEdit.setText('')
+        #     self.LanMaclineEdit.setText('')
+        #     self.WanMaclineEdit.setText('')
 
     def Reset(self):
         cmd = 'sync && firstboot'
@@ -560,13 +566,19 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
     def Connect(self, afterUpFw=False):
         try:
             self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()), str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
+            self.logEdit.append('SSH Connect %s:%d!' % (str(self.lineEditIp.text()), int(self.lineEditPort.text())))
+            self.ConnectButton.setText(u'已连接')
+            self.setWindowTitle(str(self.lineEditIp.text()))
+            self.connectStat = True
+            self.ButtonEnble(stat=True)
         except Exception, e:
             print(str(e))
-        self.logEdit.append('SSH Connect %s:%d!' % (str(self.lineEditIp.text()), int(self.lineEditPort.text())))
-        self.ConnectButton.setText(u'已连接')
-        self.setWindowTitle(str(self.lineEditIp.text()))
-        self.connectStat = True
-        self.ButtonEnble(stat=True)
+
+
+        while(self.connectStat):
+            self.get_info()
+            break
+
         # self.targetIp=self.TargetIPLlineEdit.text()
 
         # self.targetIp = self.comboBox.currentText()
@@ -608,6 +620,108 @@ class MyApp(QtGui.QMainWindow, Ui_Dialog):
         # self.EnableSshThread.percSignal.connect(proDlg.setValue)
         # proDlg.canceled.connect(self.EnableSshThread.stop)
         # self.EnableSshThread.start()
+
+    def get_info(self):
+        cmd = self.shellJson.get('info').get('network')
+        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
+        n_str = stdout.read()
+        self.fill_cfg_network(n_str)
+        self.append_info('<================================ network =====================================>')
+        self.append_info(n_str)
+        cmd = self.shellJson.get('info').get('version')
+        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
+        self.append_info('<================================ version =====================================>')
+        self.append_info(stdout.read())
+        cmd = self.shellJson.get('info').get('usb')
+        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
+        self.append_info('<================================= usb ========================================>')
+        self.append_info(stdout.read())
+
+    def append_info(self, info):
+        self.textBrowserInfo.append(str(info))
+
+    def clear_info(self):
+        self.textBrowserInfo.clear()
+
+    def fill_cfg_network(self, info=None):
+        kvs = info.split('\n')
+        for i, kv in enumerate(kvs):
+            kvs[i] = kv.split('=')
+        ks = self.shellJson.get('keys').get('setting').get('network')
+        u_ip = self.__get_v_f_network_info_str(ks.get('upgradeIp'), kvs)
+        u_port = self.__get_v_f_network_info_str(ks.get('upgradePort'), kvs)
+        o_ip = self.__get_v_f_network_info_str(ks.get('operationIp'), kvs)
+        o_port = self.__get_v_f_network_info_str(ks.get('operationPort'), kvs)
+        i_ip = self.__get_v_f_network_info_str(ks.get('idcardIp'), kvs)
+        i_port = self.__get_v_f_network_info_str(ks.get('idcardPort'), kvs)
+        l_url = self.__get_v_f_network_info_str(ks.get('logsrvUrl'), kvs)
+        self.LineEditUpdateIp.setText(u_ip)
+        self.LineEditUpdatePort.setText(u_port)
+        self.LineEditOperationIp.setText(o_ip)
+        self.LineEditOperationPort.setText(o_port)
+        self.LineEditIdCardIp.setText(i_ip)
+        self.LineEditIdCardPort.setText(i_port)
+        self.LineEditLogURL.setText(l_url)
+
+    def __get_v_f_network_info_str(self, k, kvs):
+        """从字符串中获取网络配置信息"""
+        for kv in kvs:
+            if kv[0] == k:
+                return kv[1].replace("'", "")
+
+    def set_network(self):
+        vr = self.__validate_network_cfg()
+        if not vr[0]:
+            warn_dialog = QtGui.QErrorMessage()
+            warn_dialog.showMessage(vr[1])
+            warn_dialog.setWindowTitle(u"错误")
+            warn_dialog.exec_()
+            return
+        settings = vr[1]
+        cmd = str(self.shellJson.get('setting').get('network').get('set'))
+        ks = self.shellJson.get('keys').get('setting').get('network')
+        self.__exe_cmd(str.format(cmd, ks.get('operationIp'), str(settings[0])))
+        self.__exe_cmd(str.format(cmd, ks.get('operationPort'), str(settings[1])))
+        self.__exe_cmd(str.format(cmd, ks.get('upgradeIp'), str(settings[2])))
+        self.__exe_cmd(str.format(cmd, ks.get('upgradePort'), str(settings[3])))
+        self.__exe_cmd(str.format(cmd, ks.get('idcardIp'), str(settings[4])))
+        self.__exe_cmd(str.format(cmd, ks.get('idcardPort'), str(settings[5])))
+        self.__exe_cmd(str.format(cmd, ks.get('logsrvUrl'), str(settings[6])))
+        self.__exe_cmd(self.shellJson.get('setting').get('network').get('commit'))
+
+    def __validate_network_cfg(self):
+        o_ip = self.LineEditOperationIp.text()
+        o_port = self.LineEditOperationPort.text()
+        u_ip =self.LineEditUpdateIp.text()
+        u_port = self.LineEditUpdatePort.text()
+        i_ip = self.LineEditIdCardIp.text()
+        i_port = self.LineEditIdCardPort.text()
+        l_url  = self.LineEditLogURL.text()
+        ip_pattern = r'^(?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9]))$'
+        port_pattern = r'^\d{2,5}$'
+        url_pattern = r'((https?|ftp|file)://)?[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]'
+        if not re.match(ip_pattern, str(o_ip)):
+            return False, u'业务服务器IP格式错误'
+        if not re.match(port_pattern, str(o_port)):
+            return False, u'业务服务器端口格式错误'
+        if not re.match(ip_pattern, str(u_ip)):
+            return False, u'升级服务器IP格式错误'
+        if not re.match(port_pattern, str(u_port)):
+            return False, u'升级服务器端口格式错误'
+        if not re.match(ip_pattern, str(i_ip)):
+            return False, u'身份证服务器IP格式错误'
+        if not re.match(port_pattern, str(i_port)):
+            return False, u'身份证服务器端口格式错误'
+        if not re.match(url_pattern, str(l_url)):
+            return False, u'日志服务器URL格式错误'
+        return True, (o_ip, o_port, u_ip, u_port, i_ip, i_port, l_url)
+
+    def __log_append(self, log):
+        self.logEdit.append(log)
+
+    def __exe_cmd(self, cmd):
+        self.__log_append('===> ' + cmd)
+        self.sshClient.exec_command(cmd)
 
     def GetInfo(self):
         # enable ssh is cancelled
