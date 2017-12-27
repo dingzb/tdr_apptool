@@ -5,14 +5,27 @@
     "usb": "lsusb"
   },
   "setting": {
-    "network": {
+    "server": {
+      "get": "uci show tdripcfg | grep tdripcfg | grep -v data",
       "set": "uci set {:s}='{:s}'",
       "commit": "uci commit tdripcfg"
+    },
+    "network": {
+      "wan": {
+        "get": "uci show network | grep network.wan. | grep -v network.wan6",
+        "set": "uci set {:s}='{:s}'",
+        "commit": "uci commit network"
+      },
+      "lan": {
+        "get": "uci show network | grep network.lan. | grep -v 'ip6\\|force_line\\|type\\|force_link\\|proto'",
+        "set": "uci set {:s}='{:s}'",
+        "commit": "uci commit network"
+      }
     }
   },
   "keys": {
     "setting": {
-      "network": {
+      "server": {
         "upgradeIp": "tdripcfg.tdripcfg.upgradeip",
         "upgradePort": "tdripcfg.tdripcfg.upgradeport",
         "operationIp": "tdripcfg.tdripcfg.operationip",
@@ -20,6 +33,20 @@
         "idcardIp": "tdripcfg.tdripcfg.idcardip",
         "idcardPort": "tdripcfg.tdripcfg.idcardport",
         "logsrvUrl": "tdripcfg.tdripcfg.logsrvurl"
+      },
+      "network": {
+        "wan": {
+          "name": "network.wan.ifname",
+          "proto": "network.wan.proto",
+          "ip": "network.wan.ipaddr",
+          "mask": "network.wan.netmask",
+          "gateway": "network.wan.gateway"
+        },
+        "lan": {
+          "name": "network.lan.ifname",
+          "ip": "network.lan.ipaddr",
+          "mask": "network.lan.netmask"
+        }
       }
     }
   }
