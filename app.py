@@ -5,6 +5,7 @@ import json
 from PyQt4 import QtGui
 import paramiko
 from ui import Ui_MainWindow
+import _cffi_backend
 
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
