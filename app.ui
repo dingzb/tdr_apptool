@@ -79,6 +79,12 @@
             </item>
             <item>
              <widget class="QTextBrowser" name="textBrowserInfo">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
               <property name="styleSheet">
                <string notr="true">border: none;</string>
               </property>
@@ -679,12 +685,11 @@
     <property name="title">
      <string>文件</string>
     </property>
-    <addaction name="action"/>
+    <addaction name="actionExit"/>
    </widget>
    <addaction name="menu"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="action">
+  <action name="actionExit">
    <property name="text">
     <string>退出</string>
    </property>

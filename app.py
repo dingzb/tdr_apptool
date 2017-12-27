@@ -1,18 +1,10 @@
 # -*- coding: utf-8 -*-
-import binascii
-import os
-
 import sys
 import re
-
-reload(sys)
 import json
+from PyQt4 import QtGui
 import paramiko
-from ui import *
-
-target_user = 'root'
-target_port = 22
-target_passwd = 't0d7r19tdr'
+from ui import Ui_MainWindow
 
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
@@ -31,10 +23,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonLanRefresh.clicked.connect(self.get_network_lan_cfg)
         self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
         self.cmdlineEdit.returnPressed.connect(self.run_cmd)
+        self.actionExit.triggered.connect(self.close)
         self.sshClient = paramiko.SSHClient()
         self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        with open('shell.json') as jsonFile:
-            self.shellJson = json.load(jsonFile, encoding='utf8')
+        json_file = open('shell.json')
+        self.shellJson = json.load(json_file, encoding='utf8')
+        json_file.close()
 
     def run_cmd(self):
         cmd = self.cmdlineEdit.text()
@@ -49,9 +43,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         pass
 
     def connect_dev(self):
-        self.log_append(str.format('Connect to {:s}:{:d} ...', str(self.lineEditIp.text()), int(self.lineEditPort.text())))
+        self.log_append(
+            str.format('Connect to {:s}:{:d} ...', str(self.lineEditIp.text()), int(self.lineEditPort.text())))
         try:
-            self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()), str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
+            self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()),
+                                   str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
             self.log_append(str.format('Connected.'))
             self.setWindowTitle(str(self.lineEditIp.text()))
             self.connect_enable(stat=True)
@@ -255,11 +251,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         """校验服务器配置有效性"""
         o_ip = self.LineEditOperationIp.text()
         o_port = self.LineEditOperationPort.text()
-        u_ip =self.LineEditUpdateIp.text()
+        u_ip = self.LineEditUpdateIp.text()
         u_port = self.LineEditUpdatePort.text()
         i_ip = self.LineEditIdCardIp.text()
         i_port = self.LineEditIdCardPort.text()
-        l_url  = self.LineEditLogURL.text()
+        l_url = self.LineEditLogURL.text()
         if not self.validate_ip(o_ip):
             return False, u'业务服务器IP格式错误'
         if not self.validate_port(o_port):
@@ -298,7 +294,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def validate_mask(self, mask):
         pattern = r'^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])(\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])){3}$'
         return re.match(pattern, str(mask))
-    ###############################################################################################
 
     def show_warning(self, warn):
         warn_dialog = QtGui.QErrorMessage()
@@ -306,160 +301,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         warn_dialog.setWindowTitle(u"错误")
         warn_dialog.exec_()
 
-    def GetInfo(self):
-        # enable ssh is cancelled
-        # if self.EnableSshThread.stopped == True:
-        #     return
-
-        # get a ssh client
-        # self.sshClient = paramiko.SSHClient()
-        # self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # target_port = 22
-        # try:
-        #     self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()), str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
-        # except Exception, e:
-        #     print(str(e))
-        #     pass
-            # target_port = 22122
-            # self.sshClient.connect(str(self.targetIp), target_port, target_user, target_passwd)
-
-        # self.logEdit.append('SSH Connect %s:%d!' % (str(self.lineEditIp.text()), int(self.lineEditPort.text())))
-        # self.ConnectButton.setText(u'已连接')
-        # self.setWindowTitle(str(self.lineEditIp.text()))
-        # self.connectStat = True
-        # self.ButtonEnble(stat=True)
-
-        # get firmware version
-        cmd = 'cat /etc/openwrt_version'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        self.logEdit.append(outstr)
-        self.FwVersionlineEdit.setText(outstr)
-
-        # get device config, such as SN
-        cmd = 'cat /etc/wifiroute.conf'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        self.logEdit.append(outstr)
-        find_sn = outstr.find('sn=')
-        outstr = outstr[find_sn:]
-        find_sn = outstr.find('\n')
-        outstr = outstr[3:find_sn]
-        self.sn = outstr
-        self.SnlineEdit.setText(outstr)
-
-        cmd = 'uci show wireless'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        self.logEdit.append(outstr)
-        # find ap & sta interface
-        find_sn = outstr.find('.mode=ap')
-        self.iface = outstr[outstr[:find_sn].rfind('\n') + 1: find_sn]
-        find_sn = outstr.find('.mode=sta')
-        self.ifaceWan = outstr[outstr[:find_sn].rfind('\n') + 1: find_sn]
-
-        targetStr = self.iface + '.ssid='
-        find_sn = outstr.find(targetStr)
-        self.ssid = outstr[find_sn + len(targetStr): outstr.find('\n', find_sn)]
-        self.SSIDlineEdit.setText(self.ssid)
-        targetStr = self.ifaceWan + '.ssid='
-        find_sn = outstr.find(targetStr)
-        self.ssid = outstr[find_sn + len(targetStr): outstr.find('\n', find_sn)]
-        self.WanSSIDlineEdit.setText(self.ssid)
-        # find encryption
-        targetStr = self.iface + '.encryption='
-        find_sn = outstr.find(targetStr)
-        self.encryption = outstr[find_sn + len(targetStr): outstr.find('\n', find_sn)]
-        # find passwd
-        if self.encryption != 'none':
-            targetStr = self.iface + '.key='
-            find_sn = outstr.find(targetStr)
-            if find_sn < 0:
-                self.password = ''
-            else:
-                self.password = outstr[find_sn + len(targetStr): outstr.find('\n', find_sn)]
-        else:
-            self.password = ''
-        self.PasswdlineEdit.setText(self.password)
-
-        cmd = 'fw_printenv'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        self.logEdit.append(outstr)
-        find_sn = outstr.find('tdrsn=')
-        if find_sn > 0:  # there is tdrsn in u-boot-env
-            outstr = outstr[find_sn:]
-            find_sn = outstr.find('\n')
-            self.resetSn = outstr[6:find_sn]
-            self.ResetSnlineEdit.setText(self.resetSn)
-        else:
-            cmd = 'cat /rom/etc/wifiroute.conf'
-            self.logEdit.append('==>' + cmd)
-            stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-            outstr = stdout.read()
-            self.logEdit.append(outstr)
-            find_sn = outstr.find('sn=')
-            outstr = outstr[find_sn:]
-            find_sn = outstr.find('\n')
-            outstr = outstr[3:find_sn]
-            self.resetSn = outstr
-            self.ResetSnlineEdit.setText(outstr)
-
-        cmd = 'cat /mnt/USBDisk/AppleIPK/etc/appList.json'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        jsstr = stdout.read()
-        if len(jsstr) > 0:
-            jsobj = json.loads(jsstr)
-            osstr = ['IOS', 'Android']
-            for js in jsobj:
-                self.logEdit.append(
-                    '系统:' + osstr[int(js['os'])] + '\t' + js['name'] + '\t版本:' + js['version'] + '\tID:' + str(
-                        js['id']))
-        else:
-            self.logEdit.append('applist.json is empty')
-
-        cmd = 'ifconfig | grep HWaddr'
-        self.logEdit.append('==>' + cmd)
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        for outstr in stdout.readlines():
-            if outstr.find('ath0') > -1 and outstr.find('ath01') < 0:
-                self.AthMac = outstr[outstr.find('HWaddr ') + 7: outstr.find('\n') - 2].replace(':', '')
-                self.AthMaclineEdit.setText(self.AthMac)
-            if outstr.find('eth0') > -1:
-                self.WanMac = outstr[outstr.find('HWaddr ') + 7: outstr.find('\n') - 2].replace(':', '')
-                self.WanMaclineEdit.setText(self.WanMac)
-            if outstr.find('eth1') > -1:
-                self.LanMac = outstr[outstr.find('HWaddr ') + 7: outstr.find('\n') - 2].replace(':', '')
-                self.LanMaclineEdit.setText(self.LanMac)
-
-        cmd = 'cat /etc/log.conf | grep DEBUG'
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        if outstr.find('|off|') > 0:
-            self.debugEnable = False
-            self.DebugStatButton.setText('DEBUG Off')
-        else:
-            self.debugEnable = True
-            self.DebugStatButton.setText('DEBUG On')
-
-        cmd = 'uci show system.initdone'
-        stdin, stdout, stderr = self.sshClient.exec_command(cmd)
-        outstr = stdout.read()
-        # self.initDone = int(outstr[outstr.find('=') + 1:])
-        # if self.initDone == 1:
-        #     self.InitDoneButton.setText(u'跳过快速设置')
-        # if self.initDone == 0:
-        #     self.InitDoneButton.setText(u'快速设置必须')
-
-
-if __name__ == "__main__":
+def main():
     app = QtGui.QApplication(sys.argv)
     window = MyApp()
     window.setWindowTitle(u'天地融智能下载器工具 V2.4')
     window.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
