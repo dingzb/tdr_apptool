@@ -6,6 +6,7 @@ from PyQt4 import QtGui
 import paramiko
 from ui import Ui_MainWindow
 import _cffi_backend
+import ConnectionThread
 
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
@@ -13,8 +14,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         QtGui.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
-        self.ConnectButton.clicked.connect(self.connect_dev)
-        self.connectStat = False
+        self.pushButtonConnect.clicked.connect(self.connect_dev)
         self.pushButtonSaveServer.clicked.connect(self.set_server)
         self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
         self.pushButtonRefreshInfo.clicked.connect(self.get_info)
@@ -25,8 +25,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
         self.cmdlineEdit.returnPressed.connect(self.run_cmd)
         self.actionExit.triggered.connect(self.close)
-        self.sshClient = paramiko.SSHClient()
-        self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh_client = paramiko.SSHClient()
+        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.connection = ConnectionThread.Connection(self.ssh_client, self.log_append_msg, self.log_append_err, self.log_append_std)
         json_file = open('shell.json')
         self.shellJson = json.load(json_file, encoding='utf8')
         json_file.close()
@@ -34,26 +35,25 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def run_cmd(self):
         cmd = self.cmdlineEdit.text()
         stdin, stdout, stderr = self.exe_cmd(str(cmd))
-        self.log_append(u''.join(stderr.readlines()))
-        self.log_append(u''.join(stdout.readlines()))
+        self.log_append_std(u''.join(stderr.readlines()))
+        self.log_append_std(u''.join(stdout.readlines()))
         self.cmdlineEdit.setText('')
 
     def connect_enable(self, stat):
-        self.tabWidget.setEnabled(True)
-        self.cmdlineEdit.setEnabled(True)
+        if stat:
+            self.pushButtonConnect.setText(u'已连接')
+        else:
+            self.pushButtonConnect.setText(u'连接')
+            self.pushButtonConnect.setEnabled(True)
+        self.tabWidget.setEnabled(stat)
+        self.cmdlineEdit.setEnabled(stat)
         pass
 
     def connect_dev(self):
-        self.log_append(
-            str.format('Connect to {:s}:{:d} ...', str(self.lineEditIp.text()), int(self.lineEditPort.text())))
-        try:
-            self.sshClient.connect(str(self.lineEditIp.text()), int(self.lineEditPort.text()),
-                                   str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
-            self.log_append(str.format('Connected.'))
-            self.setWindowTitle(str(self.lineEditIp.text()))
-            self.connect_enable(stat=True)
-        except Exception, e:
-            print(str(e))
+        self.pushButtonConnect.setEnabled(False)
+        self.pushButtonConnect.setText(u'连接...')
+        self.connection.open(self.connect_enable, str(self.lineEditIp.text()), int(self.lineEditPort.text()),
+                             str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
 
     def get_network_lan_cfg(self):
         """获取lan网络配置"""
@@ -273,12 +273,25 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             return False, u'日志服务器URL格式错误'
         return True, (o_ip, o_port, u_ip, u_port, i_ip, i_port, l_url)
 
-    def log_append(self, log):
-        self.logEdit.append(log)
+    def log_append(self, log, color=None):
+        if color:
+            __log = '<div style="color: ' + str(color) + ';">' + log + '</div>'
+        else:
+            __log = log
+        self.textBrowserLog.append(__log)
+
+    def log_append_msg(self, msg):
+        self.log_append(msg, 'blue')
+
+    def log_append_err(self, err):
+        self.log_append(err, 'red')
+
+    def log_append_std(self, std):
+        self.log_append(std)
 
     def exe_cmd(self, cmd):
-        self.log_append('===> ' + cmd)
-        return self.sshClient.exec_command(cmd)
+        self.log_append('> ' + cmd, 'green')
+        return self.ssh_client.exec_command(cmd)
 
     def validate_ip(self, ip):
         pattern = r'^(?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9]))$'
@@ -302,12 +315,14 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         warn_dialog.setWindowTitle(u"错误")
         warn_dialog.exec_()
 
+
 def main():
-    app = QtGui.QApplication(sys.argv)
-    window = MyApp()
-    window.setWindowTitle(u'天地融智能下载器工具 V2.4')
-    window.show()
-    sys.exit(app.exec_())
+    pass
+
 
 if __name__ == "__main__":
-    main()
+    app = QtGui.QApplication(sys.argv)
+    window = MyApp()
+    window.setWindowTitle(u'门禁工具 V0.1')
+    window.show()
+    sys.exit(app.exec_())
