@@ -15,6 +15,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
         self.pushButtonConnect.clicked.connect(self.connect_dev)
+        self.pushButtonReboot.clicked.connect(self.re_boot)
         self.pushButtonSaveServer.clicked.connect(self.set_server)
         self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
         self.pushButtonRefreshInfo.clicked.connect(self.get_info)
@@ -25,6 +26,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
         self.cmdlineEdit.returnPressed.connect(self.run_cmd)
         self.actionExit.triggered.connect(self.close)
+        self.text_browser_context_menu()
         self.ssh_client = paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.connection = ConnectionThread.Connection(self.ssh_client, self.log_append_msg, self.log_append_err, self.log_append_std)
@@ -45,6 +47,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.pushButtonConnect.setText(u'连接')
             self.pushButtonConnect.setEnabled(True)
+        self.pushButtonReboot.setEnabled(stat)
         self.tabWidget.setEnabled(stat)
         self.cmdlineEdit.setEnabled(stat)
         pass
@@ -122,6 +125,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.exe_cmd(str.format(cmd, ks.get('mask'), str(settings[2])))
             self.exe_cmd(str.format(cmd, ks.get('gateway'), str(settings[3])))
         self.exe_cmd(self.shellJson.get('setting').get('network').get('wan').get('commit'))
+        self.show_status_bar_msg(u'配置生效需要重启')
 
     def validate_network_wan_cfg(self):
         """校验wan网络配置有效性"""
@@ -247,6 +251,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.exe_cmd(str.format(cmd, ks.get('idcardPort'), str(settings[5])))
         self.exe_cmd(str.format(cmd, ks.get('logsrvUrl'), str(settings[6])))
         self.exe_cmd(self.shellJson.get('setting').get('server').get('commit'))
+        self.show_status_bar_msg(u'配置生效需要重启')
 
     def validate_server_cfg(self):
         """校验服务器配置有效性"""
@@ -273,12 +278,24 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             return False, u'日志服务器URL格式错误'
         return True, (o_ip, o_port, u_ip, u_port, i_ip, i_port, l_url)
 
+    def re_boot(self):
+        self.exe_cmd('reboot')
+        self.dis_connect_dev()
+        self.connect_enable(False)
+
+    def dis_connect_dev(self):
+        self.ssh_client.close()
+        self.log_append_msg(u'Disconnected.')
+
     def log_append(self, log, color=None):
         if color:
             __log = '<div style="color: ' + str(color) + ';">' + log + '</div>'
         else:
             __log = log
         self.textBrowserLog.append(__log)
+
+    def log_clear(self):
+        self.textBrowserLog.clear()
 
     def log_append_msg(self, msg):
         self.log_append(msg, 'blue')
@@ -315,14 +332,35 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         warn_dialog.setWindowTitle(u"错误")
         warn_dialog.exec_()
 
+    def show_status_bar_msg(self, msg):
+        self.statusBar.showMessage(msg)
+
+    def text_browser_context_menu(self):
+        """
+        设置日志窗口右键菜单
+        :return:
+        """
+        action_clear = QtGui.QAction(self)
+        action_clear.setText(u'清空')
+        action_clear.triggered.connect(self.log_clear)
+        action_dump = QtGui.QAction(self)
+        action_dump.setText(u'导出日志记录')
+        action_dump.triggered.connect(self.log_dump)
+        self.textBrowserLog.addAction(action_clear)
+        # self.textBrowserLog.addAction(action_dump)
+
+    def log_dump(self):
+        file_path = QtGui.QFileDialog.getSaveFileName(self,u'导出文件','log' ,'(*.*)')
+        log_file = open(file_path, 'w')
+
 
 def main():
-    pass
-
-
-if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     window = MyApp()
     window.setWindowTitle(u'门禁工具 V0.1')
     window.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>816</width>
     <height>600</height>
    </rect>
   </property>
@@ -507,6 +507,9 @@ font: 9pt &quot;Consolas&quot;;</string>
         </property>
         <item>
          <widget class="QTextBrowser" name="textBrowserLog">
+          <property name="contextMenuPolicy">
+           <enum>Qt::ActionsContextMenu</enum>
+          </property>
           <property name="styleSheet">
            <string notr="true">font: 9pt &quot;Consolas&quot;;</string>
           </property>
@@ -666,6 +669,16 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushButtonReboot">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>重启</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -688,7 +701,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>816</width>
      <height>23</height>
     </rect>
    </property>
@@ -700,6 +713,7 @@ p, li { white-space: pre-wrap; }
    </widget>
    <addaction name="menu"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
    <property name="text">
     <string>退出</string>
