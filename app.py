@@ -2,8 +2,11 @@
 import sys
 import re
 import json
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
 import paramiko
+
+import SerialThread
+import androidutil
 from ui import Ui_MainWindow
 import _cffi_backend
 import ConnectionThread
@@ -14,50 +17,99 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         QtGui.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
-        self.pushButtonConnect.clicked.connect(self.connect_dev)
-        self.pushButtonReboot.clicked.connect(self.re_boot)
-        self.pushButtonSaveServer.clicked.connect(self.set_server)
-        self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
-        self.pushButtonRefreshInfo.clicked.connect(self.get_info)
-        self.pushButtonWanRefresh.clicked.connect(self.get_network_wan_cfg)
-        self.pushButtonWanSave.clicked.connect(self.set_network_wan_cfg)
-        self.radioButtonWanStatic.toggled.connect(self.set_network_wan_static_enable)
-        self.pushButtonLanRefresh.clicked.connect(self.get_network_lan_cfg)
-        self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
+        self.pushButtonOpenSerial.clicked.connect(self.open_serial)
+        self.pushButtonCloseSerial.clicked.connect(self.close_serial)
+        self.pushButtonRefreshDev.clicked.connect(self.init_devices)
+        self.tableWidget.insertRow(0)
+        self.tableWidget.insertRow(1)
+        i = QtGui.QTableWidgetItem('')
+        i.setCheckState(QtCore.Qt.Unchecked)
+        self.tableWidget.setItem(0,0, i)
+        self.tableWidget.setItem(0,1, QtGui.QTableWidgetItem('system'))
+        self.tableWidget.setItem(0,2, QtGui.QTableWidgetItem('system'))
+        self.tableWidget.setItem(0,3, QtGui.QTableWidgetItem('1.2.1'))
+        self.tableWidget.setItem(0,4, QtGui.QTableWidgetItem('Pass'))
+        # i = QtGui.QTableWidgetItem('')
+        # i.setCheckState(QtCore.Qt.Unchecked)
+        # self.tableWidget.setItem(1, 0, i)
+        self.tableWidget.setItem(1, 1, QtGui.QTableWidgetItem('system'))
+        self.tableWidget.setItem(1, 2, QtGui.QTableWidgetItem('system'))
+        self.tableWidget.setItem(1, 3, QtGui.QTableWidgetItem('1.2.1'))
+        self.tableWidget.setItem(1, 4, QtGui.QTableWidgetItem('Pass'))
+        # self.pushButtonRefreshSerial.clicked.connect(self.re_boot)
+        # self.pushButtonSaveServer.clicked.connect(self.set_server)
+        # self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
+        # self.pushButtonRefreshInfo.clicked.connect(self.get_info)
+        # self.pushButtonWanRefresh.clicked.connect(self.get_network_wan_cfg)
+        # self.pushButtonWanSave.clicked.connect(self.set_network_wan_cfg)
+        # self.radioButtonWanStatic.toggled.connect(self.set_network_wan_static_enable)
+        # self.pushButtonLanRefresh.clicked.connect(self.get_network_lan_cfg)
+        # self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
         self.cmdlineEdit.returnPressed.connect(self.run_cmd)
-        self.actionExit.triggered.connect(self.close)
+        # self.actionExit.triggered.connect(self.close)
         self.text_browser_context_menu()
-        self.ssh_client = paramiko.SSHClient()
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.connection = ConnectionThread.Connection(self.ssh_client, self.log_append_msg, self.log_append_err, self.log_append_std)
-        json_file = open('shell.json')
-        self.shellJson = json.load(json_file, encoding='utf8')
-        json_file.close()
+        # self.ssh_client = paramiko.SSHClient()
+        # self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # self.connection = ConnectionThread.Connection(self.ssh_client, self.log_append_msg, self.log_append_err, self.log_append_std)
+        self.serial_conn = SerialThread.Connection(self.log_append_msg, self.log_append_err, self.log_append_std)
+        # json_file = open('shell.json')
+        # self.shellJson = json.load(json_file, encoding='utf8')
+        # json_file.close()
+        self.init_serial()
+        self.init_devices()
+
+    def init_serial(self):
+        ports, baudrates, parities, bytesizes, stopbits, flowcontrols = self.serial_conn.get_serial_cfg_available()
+        self.comboBoxPorts.clear()
+        self.comboBoxPorts.addItems(ports)
+        self.comboBoxBaudrates.clear()
+        self.comboBoxBaudrates.addItems(baudrates)
+        self.comboBoxParities.clear()
+        self.comboBoxParities.addItems(parities)
+        self.comboBoxBytesizes.clear()
+        self.comboBoxBytesizes.addItems(bytesizes)
+        self.comboBoxStopbits.clear()
+        self.comboBoxStopbits.addItems(stopbits)
+        self.comboBoxFlowCtrl.clear()
+        self.comboBoxFlowCtrl.addItems(flowcontrols)
 
     def run_cmd(self):
         cmd = self.cmdlineEdit.text()
-        stdin, stdout, stderr = self.exe_cmd(str(cmd))
-        self.log_append_std(u''.join(stderr.readlines()))
-        self.log_append_std(u''.join(stdout.readlines()))
+        self.serial_conn.exe_cmd(cmd)
         self.cmdlineEdit.setText('')
 
     def connect_enable(self, stat):
         if stat:
-            self.pushButtonConnect.setText(u'已连接')
+            self.pushButtonCloseSerial.setEnabled(True)
         else:
-            self.pushButtonConnect.setText(u'连接')
-            self.pushButtonConnect.setEnabled(True)
-        self.pushButtonReboot.setEnabled(stat)
+            self.pushButtonOpenSerial.setEnabled(True)
+            self.pushButtonCloseSerial.setEnabled(False)
         self.tabWidget.setEnabled(stat)
         self.cmdlineEdit.setEnabled(stat)
-        pass
 
-    def connect_dev(self):
-        self.pushButtonConnect.setEnabled(False)
-        self.pushButtonConnect.setText(u'连接...')
-        self.connection.open(self.connect_enable, str(self.lineEditIp.text()), int(self.lineEditPort.text()),
-                             str(self.lineEditUsername.text()), str(self.lineEditPassword.text()))
+    def open_serial(self):
+        self.serial_conn.set_serial_cfg(self.comboBoxPorts.currentText(),
+                                        self.comboBoxBaudrates.currentText(),
+                                        self.comboBoxParities.currentText(),
+                                        self.comboBoxBytesizes.currentText(),
+                                        self.comboBoxStopbits.currentText(),
+                                        self.comboBoxFlowCtrl.currentText())
+        self.pushButtonOpenSerial.setEnabled(False)
+        self.serial_conn.open(self.connect_enable)
 
+    def close_serial(self):
+        self.log_append_msg('Close...')
+        self.serial_conn.close()
+        self.log_append_msg('Closed.')
+        self.pushButtonOpenSerial.setEnabled(True)
+        self.pushButtonCloseSerial.setEnabled(False)
+
+    def init_devices(self):
+        devs = androidutil.list_adb()
+        self.comboBoxDevList.clear()
+        self.comboBoxDevList.addItems(devs)
+
+########################################################################################################
     def get_network_lan_cfg(self):
         """获取lan网络配置"""
         cmd = self.shellJson.get('setting').get('network').get('lan').get('get')

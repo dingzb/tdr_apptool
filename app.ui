@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>816</width>
-    <height>600</height>
+    <width>879</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,6 +15,18 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>9</number>
+    </property>
+    <property name="topMargin">
+     <number>9</number>
+    </property>
+    <property name="rightMargin">
+     <number>9</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item row="1" column="0">
      <widget class="QSplitter" name="splitter">
       <property name="enabled">
@@ -35,9 +47,61 @@
          <number>0</number>
         </property>
         <item>
+         <widget class="QFrame" name="frame_7">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QLabel" name="label_36">
+             <property name="text">
+              <string>当前连接设备：</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxDevList">
+             <property name="minimumSize">
+              <size>
+               <width>160</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButtonRefreshDev">
+             <property name="text">
+              <string>刷新</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacer_24">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="currentIndex">
            <number>0</number>
@@ -47,47 +111,143 @@
             <string/>
            </property>
            <attribute name="title">
-            <string>信息</string>
+            <string>刷机</string>
            </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <property name="margin">
-             <number>0</number>
-            </property>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
-              <item>
-               <spacer name="horizontalSpacer_2">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButtonRefreshInfo">
-                <property name="text">
-                 <string>刷新</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+           <layout class="QGridLayout" name="gridLayout_2">
+            <item row="1" column="5">
+             <widget class="QPushButton" name="pushButton_4">
+              <property name="text">
+               <string>校验</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <widget class="QTextBrowser" name="textBrowserInfo">
-              <property name="minimumSize">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_14">
+              <property name="text">
+               <string>固件路径：</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="11">
+             <widget class="QTableWidget" name="tableWidget">
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::MultiSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="gridStyle">
+               <enum>Qt::DotLine</enum>
+              </property>
+              <attribute name="horizontalHeaderHighlightSections">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderDefaultSectionSize">
+               <number>21</number>
+              </attribute>
+              <attribute name="verticalHeaderHighlightSections">
+               <bool>false</bool>
+              </attribute>
+              <column>
+               <property name="text">
+                <string/>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>类型</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>名称</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>版本</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>校验状态</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string/>
+               </property>
+              </column>
+             </widget>
+            </item>
+            <item row="1" column="4">
+             <widget class="QPushButton" name="pushButton">
+              <property name="text">
+               <string>浏览</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="labelDevState">
+              <property name="text">
+               <string>Device/Fastboot</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>连接状态：</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1" colspan="3">
+             <widget class="QLineEdit" name="lineEdit"/>
+            </item>
+            <item row="1" column="9">
+             <widget class="QPushButton" name="pushButton_8">
+              <property name="text">
+               <string>刷入固件</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QPushButton" name="pushButton_7">
+              <property name="text">
+               <string>重启</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QPushButton" name="pushButton_3">
+              <property name="text">
+               <string>重启进入Fastboot</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="7">
+             <spacer name="horizontalSpacer_25">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
-                <width>0</width>
-                <height>0</height>
+                <width>40</width>
+                <height>20</height>
                </size>
               </property>
-              <property name="styleSheet">
-               <string notr="true">border: none;
-font: 9pt &quot;Consolas&quot;;</string>
+             </spacer>
+            </item>
+            <item row="1" column="6">
+             <widget class="QPushButton" name="pushButton_2">
+              <property name="text">
+               <string>刷新固件列表</string>
               </property>
              </widget>
             </item>
@@ -97,398 +257,6 @@ font: 9pt &quot;Consolas&quot;;</string>
            <attribute name="title">
             <string>服务器配置</string>
            </attribute>
-           <widget class="QWidget" name="formLayoutWidget">
-            <property name="geometry">
-             <rect>
-              <x>10</x>
-              <y>10</y>
-              <width>651</width>
-              <height>181</height>
-             </rect>
-            </property>
-            <layout class="QFormLayout" name="formLayout">
-             <property name="fieldGrowthPolicy">
-              <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-             </property>
-             <item row="0" column="0">
-              <widget class="QLabel" name="Label">
-               <property name="text">
-                <string>业务服务器地址</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="LineEditOperationIp"/>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="Label_2">
-               <property name="text">
-                <string>业务服务器端口</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QLineEdit" name="LineEditOperationPort"/>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="Label_3">
-               <property name="text">
-                <string>升级服务器地址</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QLineEdit" name="LineEditUpdateIp"/>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="Label_4">
-               <property name="text">
-                <string>升级服务器端口</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QLineEdit" name="LineEditUpdatePort"/>
-             </item>
-             <item row="4" column="1">
-              <widget class="QLineEdit" name="LineEditIdCardIp"/>
-             </item>
-             <item row="5" column="1">
-              <widget class="QLineEdit" name="LineEditIdCardPort"/>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="Label_6">
-               <property name="text">
-                <string>身份证服务器端口</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="Label_5">
-               <property name="text">
-                <string>身份证服务器地址</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="uRLLabel">
-               <property name="text">
-                <string>日志服务URL</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="1">
-              <widget class="QLineEdit" name="LineEditLogURL"/>
-             </item>
-            </layout>
-           </widget>
-           <widget class="QPushButton" name="pushButtonSaveServer">
-            <property name="geometry">
-             <rect>
-              <x>590</x>
-              <y>200</y>
-              <width>75</width>
-              <height>23</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>保存</string>
-            </property>
-           </widget>
-           <widget class="QPushButton" name="pushButtonRefreshServer">
-            <property name="geometry">
-             <rect>
-              <x>500</x>
-              <y>200</y>
-              <width>75</width>
-              <height>23</height>
-             </rect>
-            </property>
-            <property name="text">
-             <string>刷新</string>
-            </property>
-           </widget>
-          </widget>
-          <widget class="QWidget" name="tabNetSetting">
-           <attribute name="title">
-            <string>网络配置</string>
-           </attribute>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QGroupBox" name="groupBox">
-              <property name="minimumSize">
-               <size>
-                <width>260</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="title">
-               <string>WAN</string>
-              </property>
-              <widget class="QRadioButton" name="radioButtonWanStatic">
-               <property name="geometry">
-                <rect>
-                 <x>19</x>
-                 <y>48</y>
-                 <width>47</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>静态</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="pushButtonWanRefresh">
-               <property name="geometry">
-                <rect>
-                 <x>80</x>
-                 <y>170</y>
-                 <width>75</width>
-                 <height>23</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>刷新</string>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="pushButtonWanSave">
-               <property name="geometry">
-                <rect>
-                 <x>160</x>
-                 <y>170</y>
-                 <width>75</width>
-                 <height>23</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>保存</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_4">
-               <property name="geometry">
-                <rect>
-                 <x>19</x>
-                 <y>78</y>
-                 <width>36</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>IP地址</string>
-               </property>
-              </widget>
-              <widget class="QLineEdit" name="lineEditWanIp">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>78</y>
-                 <width>133</width>
-                 <height>20</height>
-                </rect>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_6">
-               <property name="geometry">
-                <rect>
-                 <x>19</x>
-                 <y>104</y>
-                 <width>48</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>子网掩码</string>
-               </property>
-              </widget>
-              <widget class="QLineEdit" name="lineEditWanMask">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>104</y>
-                 <width>133</width>
-                 <height>20</height>
-                </rect>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_5">
-               <property name="geometry">
-                <rect>
-                 <x>19</x>
-                 <y>130</y>
-                 <width>48</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>默认网关</string>
-               </property>
-              </widget>
-              <widget class="QLineEdit" name="lineEditWanGateway">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>130</y>
-                 <width>133</width>
-                 <height>20</height>
-                </rect>
-               </property>
-              </widget>
-              <widget class="QRadioButton" name="radioButtonWanAuto">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>48</y>
-                 <width>71</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>自动获取</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_9">
-               <property name="geometry">
-                <rect>
-                 <x>20</x>
-                 <y>20</y>
-                 <width>54</width>
-                 <height>12</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>设备名称</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="labelWanName">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>21</y>
-                 <width>54</width>
-                 <height>12</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>________</string>
-               </property>
-              </widget>
-             </widget>
-            </item>
-            <item>
-             <widget class="QGroupBox" name="groupBox_2">
-              <property name="minimumSize">
-               <size>
-                <width>260</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="title">
-               <string>LAN</string>
-              </property>
-              <widget class="QPushButton" name="pushButtonLanSave">
-               <property name="geometry">
-                <rect>
-                 <x>160</x>
-                 <y>170</y>
-                 <width>75</width>
-                 <height>23</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>保存</string>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="pushButtonLanRefresh">
-               <property name="geometry">
-                <rect>
-                 <x>80</x>
-                 <y>170</y>
-                 <width>75</width>
-                 <height>23</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>刷新</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_8">
-               <property name="geometry">
-                <rect>
-                 <x>20</x>
-                 <y>100</y>
-                 <width>48</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>子网掩码</string>
-               </property>
-              </widget>
-              <widget class="QLineEdit" name="lineEditLanMask">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>95</y>
-                 <width>133</width>
-                 <height>20</height>
-                </rect>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_7">
-               <property name="geometry">
-                <rect>
-                 <x>20</x>
-                 <y>70</y>
-                 <width>36</width>
-                 <height>16</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>IP地址</string>
-               </property>
-              </widget>
-              <widget class="QLineEdit" name="lineEditLanIp">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>70</y>
-                 <width>133</width>
-                 <height>20</height>
-                </rect>
-               </property>
-              </widget>
-              <widget class="QLabel" name="labelLanName">
-               <property name="geometry">
-                <rect>
-                 <x>100</x>
-                 <y>22</y>
-                 <width>54</width>
-                 <height>12</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>________</string>
-               </property>
-              </widget>
-              <widget class="QLabel" name="label_12">
-               <property name="geometry">
-                <rect>
-                 <x>20</x>
-                 <y>21</y>
-                 <width>54</width>
-                 <height>12</height>
-                </rect>
-               </property>
-               <property name="text">
-                <string>设备名称</string>
-               </property>
-              </widget>
-             </widget>
-            </item>
-           </layout>
           </widget>
          </widget>
         </item>
@@ -505,6 +273,181 @@ font: 9pt &quot;Consolas&quot;;</string>
         <property name="margin">
          <number>0</number>
         </property>
+        <item>
+         <widget class="QFrame" name="frame">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item row="0" column="16">
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>波特率：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QComboBox" name="comboBoxBaudrates">
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="9">
+            <widget class="QComboBox" name="comboBoxParities">
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="6">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>停止位：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="7">
+            <widget class="QComboBox" name="comboBoxStopbits">
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="10">
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>流控制：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="8">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>校验位：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QComboBox" name="comboBoxBytesizes">
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>数据位：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="TargetIPlabel">
+             <property name="text">
+              <string>串口：</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="11">
+            <widget class="QComboBox" name="comboBoxFlowCtrl">
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBoxPorts">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>70</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QPushButton" name="pushButtonOpenSerial">
+             <property name="text">
+              <string>打开</string>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QPushButton" name="pushButtonCloseSerial">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>关闭</string>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="pushButtonRefreshSerial">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="text">
+              <string>刷新</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
         <item>
          <widget class="QTextBrowser" name="textBrowserLog">
           <property name="contextMenuPolicy">
@@ -536,164 +479,6 @@ p, li { white-space: pre-wrap; }
       </widget>
      </widget>
     </item>
-    <item row="0" column="0">
-     <widget class="QFrame" name="frame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QLabel" name="TargetIPlabel">
-         <property name="text">
-          <string>设备IP：</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEditIp">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>172.16.34.111</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>端口：</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEditPort">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>22</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>用户名：</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEditUsername">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>root</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>密码：</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="lineEditPassword">
-         <property name="minimumSize">
-          <size>
-           <width>100</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>120</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">lineedit-password-character: 42</string>
-         </property>
-         <property name="text">
-          <string>t0d7r19tdr</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButtonConnect">
-         <property name="text">
-          <string>连接</string>
-         </property>
-         <property name="flat">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="pushButtonReboot">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>重启</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -701,7 +486,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>816</width>
+     <width>879</width>
      <height>23</height>
     </rect>
    </property>
