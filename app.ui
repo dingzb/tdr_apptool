@@ -95,7 +95,7 @@
            <set>QAbstractItemView::NoEditTriggers</set>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::MultiSelection</enum>
+           <enum>QAbstractItemView::NoSelection</enum>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>
@@ -127,7 +127,7 @@
           </column>
           <column>
            <property name="text">
-            <string>名称</string>
+            <string>路径</string>
            </property>
           </column>
           <column>
@@ -138,6 +138,11 @@
           <column>
            <property name="text">
             <string>校验状态</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>耗时</string>
            </property>
           </column>
           <column>
@@ -164,6 +169,13 @@
           </property>
          </widget>
         </item>
+        <item row="0" column="10">
+         <widget class="QPushButton" name="pushButton2Fastboot">
+          <property name="text">
+           <string>进入Fastboot</string>
+          </property>
+         </widget>
+        </item>
         <item row="1" column="10">
          <widget class="QPushButton" name="pushButtonFirmwareDir">
           <property name="text">
@@ -172,7 +184,7 @@
          </widget>
         </item>
         <item row="1" column="11">
-         <widget class="QPushButton" name="pushButton_4">
+         <widget class="QPushButton" name="pushButtonCheckSum">
           <property name="text">
            <string>校验</string>
           </property>
@@ -215,13 +227,6 @@
          <widget class="QPushButton" name="pushButtonFirmwareRefresh">
           <property name="text">
            <string>刷新固件列表</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="10">
-         <widget class="QPushButton" name="pushButton2Fastboot">
-          <property name="text">
-           <string>进入Fastboot</string>
           </property>
          </widget>
         </item>

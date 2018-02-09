@@ -28,7 +28,6 @@ class Connection:
         self.__signal_msg_handler = signal_msg_handler
         self.__signal_err_handler = signal_err_handler
         self.__signal_std_handler = signal_std_handler
-        self.__init_serial_cfg()
 
     def __set_base_signal(self, target):
         target.signal_msg.connect(self.__signal_msg_handler)
@@ -50,6 +49,7 @@ class Connection:
         self.__serial_conn.write((str(cmd) + '\n\n').encode())
 
     def __init_serial_cfg(self):
+        self.__ports = []
         import serial.tools.list_ports
         # ports
         plist = list(serial.tools.list_ports.comports())
@@ -57,9 +57,10 @@ class Connection:
             p = list(pc)
             self.__ports.append(p[0])
         # baudrates
-        self.__baudrates.extend(self.__serial_conn.BAUDRATES)
+        self.__baudrates = self.__serial_conn.BAUDRATES
 
     def get_serial_cfg_available(self):
+        self.__init_serial_cfg()
         return (self.__ports, map(str, self.__baudrates), self.__parities_names, self.__bytesizes_names, self.__stopbits_names, self.__flowcontrols)
 
     def set_serial_cfg(self, port, baudrate, parity, bytesize, stopbits, flowcontrol):
@@ -75,7 +76,6 @@ class Connection:
             self.__serial_conn.rtsct = True
         elif flowcontrol == 'DSR/DTR':
             self.__serial_conn.dsrdtr = True
-        print self.__serial_conn.get_settings()
 
 class Base(QtCore.QThread):
     signal_msg = QtCore.pyqtSignal(str)
@@ -104,7 +104,6 @@ class Open(Base):
             self.signal_success.emit(True)
             while self.monitor:
                 str1 = self.serial_conn.readline()
-                print str1
                 self.signal_msg.emit(str1)
         except Exception, e:
             print e

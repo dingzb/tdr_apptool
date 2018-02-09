@@ -20,6 +20,8 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+#TODO 刷机时传入刷机线程(firmware_path, slot)
+#TODO 刷机动画
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -32,8 +34,9 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButton2Fastboot.clicked.connect(self.adb2fastboot)
         self.pushButtonFirmwareDir.clicked.connect(self.select_firmware_dir)
         self.pushButtonFirmwareRefresh.clicked.connect(self.refresh_firmwares)
+        self.pushButtonRefreshSerial.clicked.connect(self.init_serial)
+        self.pushButtonCheckSum.clicked.connect(self.get_checked)
         #######################################################################
-        # self.pushButtonRefreshSerial.clicked.connect(self.re_boot)
         # self.pushButtonSaveServer.clicked.connect(self.set_server)
         # self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
         # self.pushButtonRefreshInfo.clicked.connect(self.get_info)
@@ -54,9 +57,15 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         # json_file.close()
         self.init_serial()
         self.monitor_dev()
+        self.init_table()
 
     def init_table(self):
-        self.tableWidget.column
+        self.tableWidget.setColumnWidth(0, 20)
+        self.tableWidget.setColumnWidth(1, 80)
+        self.tableWidget.setColumnWidth(2, 300)
+        self.tableWidget.setColumnWidth(3, 80)
+        self.tableWidget.setColumnWidth(4, 80)
+        self.tableWidget.setColumnWidth(5, 180)
 
     def init_serial(self):
         ports, baudrates, parities, bytesizes, stopbits, flowcontrols = self.serial_conn.get_serial_cfg_available()
@@ -102,6 +111,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.log_append_msg('Closed.')
         self.pushButtonOpenSerial.setEnabled(True)
         self.pushButtonCloseSerial.setEnabled(False)
+        self.cmdlineEdit.setEnabled(False)
 
     def init_devices(self):
         adbs = androidutil.list_adb()
@@ -110,6 +120,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.comboBoxDevList.addItems(adbs)
         self.comboBoxDevList.addItems(fastboots)
         mode = self.get_dev_mode(adbs, fastboots)
+        print mode
         if 'adb' == mode:
             self.mode_adb_dis()
         elif 'fastboot' == mode:
@@ -190,9 +201,19 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         for r in self.get_frimwar_list():
             rc = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rc)
+            item = QtGui.QTableWidgetItem()
+            item.setCheckState(QtCore.Qt.Unchecked)
+            self.tableWidget.setItem(rc, 0, item)
             self.tableWidget.setItem(rc, 1, QtGui.QTableWidgetItem(unicode(str(r[0]))))
             self.tableWidget.setItem(rc, 2, QtGui.QTableWidgetItem(unicode(str(r[1]))))
             self.tableWidget.setItem(rc, 3, QtGui.QTableWidgetItem(unicode(str(r[2]))))
+            #todo 添加刷机等待的动画
+
+    def get_checked(self):
+       for i in range(0, self.tableWidget.rowCount()):
+           item_ck = self.tableWidget.item(i, 0)
+           if item_ck.checkState() == QtCore.Qt.Checked:
+               print self.tableWidget.item(i, 2).text()
 
     ########################################################################################################
     def get_network_lan_cfg(self):
@@ -491,8 +512,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         log_file = open(file_path, 'w')
 
 class DevMonitor(QtCore.QThread):
-    __adbs = []
-    __fastboots = []
+    __adbs = None
+    __fastboots = None
     signal_refresh_dev = QtCore.pyqtSignal()
     def __init__(self):
         QtCore.QThread.__init__(self)
