@@ -2,14 +2,23 @@
 import sys
 import re
 import json
+
+import time
+
+import os
 from PyQt4 import QtGui, QtCore
 import paramiko
+from PyQt4.QtGui import QFileDialog
 
 import SerialThread
 import androidutil
 from ui import Ui_MainWindow
 import _cffi_backend
 import ConnectionThread
+
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
@@ -19,23 +28,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.pushButtonOpenSerial.clicked.connect(self.open_serial)
         self.pushButtonCloseSerial.clicked.connect(self.close_serial)
-        self.pushButtonRefreshDev.clicked.connect(self.init_devices)
-        self.tableWidget.insertRow(0)
-        self.tableWidget.insertRow(1)
-        i = QtGui.QTableWidgetItem('')
-        i.setCheckState(QtCore.Qt.Unchecked)
-        self.tableWidget.setItem(0,0, i)
-        self.tableWidget.setItem(0,1, QtGui.QTableWidgetItem('system'))
-        self.tableWidget.setItem(0,2, QtGui.QTableWidgetItem('system'))
-        self.tableWidget.setItem(0,3, QtGui.QTableWidgetItem('1.2.1'))
-        self.tableWidget.setItem(0,4, QtGui.QTableWidgetItem('Pass'))
-        # i = QtGui.QTableWidgetItem('')
-        # i.setCheckState(QtCore.Qt.Unchecked)
-        # self.tableWidget.setItem(1, 0, i)
-        self.tableWidget.setItem(1, 1, QtGui.QTableWidgetItem('system'))
-        self.tableWidget.setItem(1, 2, QtGui.QTableWidgetItem('system'))
-        self.tableWidget.setItem(1, 3, QtGui.QTableWidgetItem('1.2.1'))
-        self.tableWidget.setItem(1, 4, QtGui.QTableWidgetItem('Pass'))
+        self.pushButtonReboot.clicked.connect(self.reboot_dev)
+        self.pushButton2Fastboot.clicked.connect(self.adb2fastboot)
+        self.pushButtonFirmwareDir.clicked.connect(self.select_firmware_dir)
+        self.pushButtonFirmwareRefresh.clicked.connect(self.refresh_firmwares)
+        #######################################################################
         # self.pushButtonRefreshSerial.clicked.connect(self.re_boot)
         # self.pushButtonSaveServer.clicked.connect(self.set_server)
         # self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
@@ -56,7 +53,10 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         # self.shellJson = json.load(json_file, encoding='utf8')
         # json_file.close()
         self.init_serial()
-        self.init_devices()
+        self.monitor_dev()
+
+    def init_table(self):
+        self.tableWidget.column
 
     def init_serial(self):
         ports, baudrates, parities, bytesizes, stopbits, flowcontrols = self.serial_conn.get_serial_cfg_available()
@@ -84,7 +84,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         else:
             self.pushButtonOpenSerial.setEnabled(True)
             self.pushButtonCloseSerial.setEnabled(False)
-        self.tabWidget.setEnabled(stat)
         self.cmdlineEdit.setEnabled(stat)
 
     def open_serial(self):
@@ -105,11 +104,97 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonCloseSerial.setEnabled(False)
 
     def init_devices(self):
-        devs = androidutil.list_adb()
+        adbs = androidutil.list_adb()
+        fastboots = androidutil.list_fastboot()
         self.comboBoxDevList.clear()
-        self.comboBoxDevList.addItems(devs)
+        self.comboBoxDevList.addItems(adbs)
+        self.comboBoxDevList.addItems(fastboots)
+        mode = self.get_dev_mode(adbs, fastboots)
+        if 'adb' == mode:
+            self.mode_adb_dis()
+        elif 'fastboot' == mode:
+            self.mode_fastboot_dis()
+        else:
+            self.mode_none()
 
-########################################################################################################
+    def get_dev_mode(self, adbs=None, fastboots=None):
+        if adbs is None:
+            adbs = androidutil.list_adb()
+        if fastboots is None:
+            fastboots = androidutil.list_fastboot()
+        return androidutil.dev_mode(str(self.comboBoxDevList.currentText()), adbs, fastboots)
+
+    def reboot_dev(self):
+        mode = self.get_dev_mode()
+        if mode == 'adb':
+            androidutil.adb_reboot()
+
+        elif mode == 'fastboot':
+            androidutil.fastboot_reboot()
+        else:
+            self.show_warning(u'设备连接错误')
+
+    def adb2fastboot(self):
+        androidutil.adb2fastboot()
+
+    def monitor_dev(self):
+        self.monitor = DevMonitor()
+        self.monitor.signal_refresh_dev.connect(self.init_devices)
+        self.monitor.start()
+
+    def mode_adb_dis(self):
+        self.checkBoxAdb.setChecked(True)
+        self.checkBoxFastboot.setChecked(False)
+        self.pushButton2Fastboot.setEnabled(True)
+        self.pushButtonFlash.setEnabled(False)
+        self.pushButtonReboot.setEnabled(True)
+
+    def mode_fastboot_dis(self):
+        self.checkBoxAdb.setChecked(False)
+        self.checkBoxFastboot.setChecked(True)
+        self.pushButton2Fastboot.setEnabled(False)
+        self.pushButtonFlash.setEnabled(True)
+        self.pushButtonReboot.setEnabled(True)
+
+    def mode_none(self):
+        self.checkBoxAdb.setChecked(False)
+        self.checkBoxFastboot.setChecked(False)
+        self.pushButton2Fastboot.setEnabled(False)
+        self.pushButtonFlash.setEnabled(False)
+        self.pushButtonReboot.setEnabled(False)
+
+    def select_firmware_dir(self):
+        self.lineEditFirmwareDir.setText(QFileDialog.getExistingDirectory(QtGui.QFileDialog(),u'选择固件位置'))
+        self.refresh_firmwares()
+
+    def get_frimwar_list(self, dir=None):
+        """这里暂时根据文件后缀筛选，后期考虑根据校验文件的固件列表获取文件并校验"""
+        rs = []
+        system_img = 'system.img'
+        boot_img = 'boot.img'
+
+        if dir is None:
+            dir = self.lineEditFirmwareDir.text()
+        if not dir:
+            return rs
+        for f_n in os.listdir(dir):
+            if f_n == system_img:
+                rs.append(('system', dir + '\\' + f_n, '1.0'))
+            elif f_n == boot_img:
+                rs.append(('boot', dir + '\\' + f_n, '1.0'))
+        return rs
+
+    def refresh_firmwares(self):
+        self.tableWidget.setRowCount(0)
+        self.tableWidget.clearContents()
+        for r in self.get_frimwar_list():
+            rc = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(rc)
+            self.tableWidget.setItem(rc, 1, QtGui.QTableWidgetItem(unicode(str(r[0]))))
+            self.tableWidget.setItem(rc, 2, QtGui.QTableWidgetItem(unicode(str(r[1]))))
+            self.tableWidget.setItem(rc, 3, QtGui.QTableWidgetItem(unicode(str(r[2]))))
+
+    ########################################################################################################
     def get_network_lan_cfg(self):
         """获取lan网络配置"""
         cmd = self.shellJson.get('setting').get('network').get('lan').get('get')
@@ -404,6 +489,30 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def log_dump(self):
         file_path = QtGui.QFileDialog.getSaveFileName(self,u'导出文件','log' ,'(*.*)')
         log_file = open(file_path, 'w')
+
+class DevMonitor(QtCore.QThread):
+    __adbs = []
+    __fastboots = []
+    signal_refresh_dev = QtCore.pyqtSignal()
+    def __init__(self):
+        QtCore.QThread.__init__(self)
+
+    def run(self):
+        while True:
+            adbs = androidutil.list_adb()
+            fastboots = androidutil.list_fastboot()
+            need_refresh = False
+            if self.__adbs != adbs:
+                self.__adbs = adbs
+                need_refresh |= True
+            if self.__fastboots != fastboots:
+                self.__fastboots = fastboots
+                need_refresh |= True
+            if need_refresh:
+                self.signal_refresh_dev.emit()
+            time.sleep(0.25)
+
+
 
 
 def main():
