@@ -192,11 +192,13 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             dir = self.lineEditFirmwareDir.text()
         if not dir:
             return rs
-        for f_n in os.listdir(dir):
-            if system_img in f_n:
-                rs.append((system_img, dir + '\\' + f_n, '1.0'))
-            elif boot_img in f_n:
-                rs.append((boot_img, dir + '\\' + f_n, '1.0'))
+        rs.append((system_img, 'D:\\work\\GoFun\\system.img', '1.0'))
+        rs.append((boot_img, 'D:\\work\\GoFun\\boot.img', '1.0'))
+        # for f_n in os.listdir(dir):
+        #     if system_img in f_n:
+        #         rs.append((system_img, dir + '\\' + f_n, '1.0'))
+        #     elif boot_img in f_n:
+        #         rs.append((boot_img, dir + '\\' + f_n, '1.0'))
         return rs
 
     def refresh_firmwares(self):
@@ -211,164 +213,53 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.tableWidget.setItem(rc, 1, QtGui.QTableWidgetItem(unicode(str(r[0]))))
             self.tableWidget.setItem(rc, 2, QtGui.QTableWidgetItem(unicode(str(r[1]))))
             self.tableWidget.setItem(rc, 3, QtGui.QTableWidgetItem(unicode(str(r[2]))))
-            # self.tableWidget.setCellWidget(rc, 5, QtGui.Widget.QProgressBar(self))
-            # todo 添加刷机等待的动画
 
     def get_checked(self):
         checkeds = []
         for i in range(0, self.tableWidget.rowCount()):
             item_ck = self.tableWidget.item(i, 0)
             if item_ck.checkState() == QtCore.Qt.Checked:
-                checkeds.append((str(self.tableWidget.item(i, 1).text()), str(self.tableWidget.item(i, 2).text())))
+                checkeds.append((i, str(self.tableWidget.item(i, 1).text()), str(self.tableWidget.item(i, 2).text())))
         return checkeds
 
     def flash_firmware_start(self):
-        self.flash.set_checkeds(self.get_checked())
+        checkeds = self.get_checked()
+        for checked in checkeds:
+            progress = QtGui.QProgressBar(self)
+            progress.setAlignment(QtCore.Qt.AlignHCenter)
+            progress.setMinimum(0)
+            self.tableWidget.setCellWidget(checked[0], 5, progress)
+        time.sleep(0.01) # table设置进度条和刷机都是多线程进行的，要保证进度条设置完成后在开始刷机
+        self.flash.set_checkeds(checkeds)
         self.flash.start()
 
     def flash_firmware_stop(self):
         self.flash.stop = True
 
     def flash_firmware_info(self, stage, msg):
-        if msg:
-            self.textBrowserFlash.append('<div style="color: red;">' + msg + '</div>')
-
+        if not msg:
+            return
+        self.textBrowserFlash.append('<div style="color: red;">' + msg + '</div>')
+        progress = self.tableWidget.cellWidget(stage, 5)
+        if re.match(r'^target reported', msg):
+            progress.setValue(0)
+        elif re.match(r'^erasing', msg):
+            progress.setValue(5)
+        elif re.match(r'^sending sparse \'.*\' 1/3', msg):
+            progress.setValue(10)
+        elif re.match(r'^writing \'.*\' 1/3', msg):
+            progress.setValue(25)
+        elif re.match(r'^sending sparse \'.*\' 2/3', msg):
+            progress.setValue(40)
+        elif re.match(r'^writing \'.*\' 2/3', msg):
+            progress.setValue(55)
+        elif re.match(r'^sending sparse \'.*\' 3/3', msg):
+            progress.setValue(70)
+        elif re.match(r'^writing \'.*\' 3/3', msg):
+            progress.setValue(85)
+        elif re.match(r'^finished. total time', msg):
+            progress.setValue(100)
     ########################################################################################################
-    def get_network_lan_cfg(self):
-        """获取lan网络配置"""
-        cmd = self.shellJson.get('setting').get('network').get('lan').get('get')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        network_lan_cfg_str = stdout.read()
-        self.fill_newtork_lan_cfg(network_lan_cfg_str)
-        return network_lan_cfg_str
-
-    def set_network_lan_cfg(self):
-        """设置lan网络配置"""
-        vn = self.validate_network_lan_cfg()
-        if not vn[0]:
-            self.show_warning(vn[1])
-            return
-        settings = vn[1]
-        cmd = str(self.shellJson.get('setting').get('network').get('lan').get('set'))
-        ks = self.shellJson.get('keys').get('setting').get('network').get('lan')
-        self.exe_cmd(str.format(cmd, ks.get('ip'), str(settings[0])))
-        self.exe_cmd(str.format(cmd, ks.get('mask'), str(settings[1])))
-        self.exe_cmd(self.shellJson.get('setting').get('network').get('lan').get('commit'))
-
-    def validate_network_lan_cfg(self):
-        """校验wan网络配置有效性"""
-        ip = self.lineEditLanIp.text()
-        mask = self.lineEditLanMask.text()
-        if not self.validate_ip(ip):
-            return False, u'IP地址格式错误'
-        if not self.validate_mask(mask):
-            return False, u'子网掩码格式错误'
-        return True, (ip, mask)
-
-    def fill_newtork_lan_cfg(self, info):
-        """填充lan网络配置"""
-        kvs = info.split('\n')
-        for i, kv in enumerate(kvs):
-            kvs[i] = kv.split('=')
-        ks = self.shellJson.get('keys').get('setting').get('network').get('lan')
-        name = self.get_cfg_f_tuple(ks.get('name'), kvs)
-        ip = self.get_cfg_f_tuple(ks.get('ip'), kvs)
-        mask = self.get_cfg_f_tuple(ks.get('mask'), kvs)
-        self.labelLanName.setText(name)
-        self.lineEditLanIp.setText(str(ip))
-        self.lineEditLanMask.setText(str(mask))
-
-    def get_network_wan_cfg(self):
-        """获取wan网络配置"""
-        cmd = self.shellJson.get('setting').get('network').get('wan').get('get')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        network_wan_cfg_str = stdout.read()
-        self.fill_newtork_wan_cfg(network_wan_cfg_str)
-        return network_wan_cfg_str
-
-    def set_network_wan_cfg(self):
-        """设置wan配置"""
-        vn = self.validate_network_wan_cfg()
-        if not vn[0]:
-            self.show_warning(vn[1])
-            return
-        settings = vn[1]
-        cmd = str(self.shellJson.get('setting').get('network').get('wan').get('set'))
-        ks = self.shellJson.get('keys').get('setting').get('network').get('wan')
-        self.exe_cmd(str.format(cmd, ks.get('proto'), str(settings[0])))
-        if str(settings[0]) == 'static':
-            self.exe_cmd(str.format(cmd, ks.get('ip'), str(settings[1])))
-            self.exe_cmd(str.format(cmd, ks.get('mask'), str(settings[2])))
-            self.exe_cmd(str.format(cmd, ks.get('gateway'), str(settings[3])))
-        self.exe_cmd(self.shellJson.get('setting').get('network').get('wan').get('commit'))
-        self.show_status_bar_msg(u'配置生效需要重启')
-
-    def validate_network_wan_cfg(self):
-        """校验wan网络配置有效性"""
-        proto = 'static' if self.radioButtonWanStatic.isChecked() else 'dhcp'
-        ip = self.lineEditWanIp.text()
-        mask = self.lineEditWanMask.text()
-        gateway = self.lineEditWanGateway.text()
-        if proto == 'dhcp':
-            return True, (proto,)
-        else:
-            if not self.validate_ip(ip):
-                return False, u'IP地址格式错误'
-            if not self.validate_mask(mask):
-                return False, u'子网掩码格式错误'
-            if not self.validate_ip(gateway):
-                return False, u'网关地址格式错误'
-            return True, (proto, ip, mask, gateway)
-
-    def fill_newtork_wan_cfg(self, info):
-        """填充wan网络配置"""
-        kvs = info.split('\n')
-        for i, kv in enumerate(kvs):
-            kvs[i] = kv.split('=')
-        ks = self.shellJson.get('keys').get('setting').get('network').get('wan')
-        name = self.get_cfg_f_tuple(ks.get('name'), kvs)
-        proto = self.get_cfg_f_tuple(ks.get('proto'), kvs)
-        ip = self.get_cfg_f_tuple(ks.get('ip'), kvs)
-        mask = self.get_cfg_f_tuple(ks.get('mask'), kvs)
-        gateway = self.get_cfg_f_tuple(ks.get('gateway'), kvs)
-        self.labelWanName.setText(name)
-        self.radioButtonWanStatic.setChecked('static' == proto)
-        self.radioButtonWanAuto.setChecked('dhcp' == proto)
-        if 'static' == proto:
-            self.lineEditWanIp.setText(str(ip))
-            self.lineEditWanMask.setText(str(mask))
-            self.lineEditWanGateway.setText(str(gateway))
-        else:
-            self.set_network_wan_static_enable(False)
-
-    def set_network_wan_static_enable(self, enable):
-        self.lineEditWanIp.setEnabled(enable)
-        self.lineEditWanMask.setEnabled(enable)
-        self.lineEditWanGateway.setEnabled(enable)
-
-    def get_server_cfg(self):
-        """获取服务器配置"""
-        cmd = self.shellJson.get('setting').get('server').get('get')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        server_cfg_str = stdout.read()
-        self.fill_server_cfg(server_cfg_str)
-        return server_cfg_str
-
-    def get_info(self):
-        """获取设备信息"""
-        self.info_clear()
-        cmd = self.shellJson.get('info').get('network')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        self.info_append('<================================ network =====================================>')
-        self.info_append(stdout.read())
-        cmd = self.shellJson.get('info').get('version')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        self.info_append('<================================ version =====================================>')
-        self.info_append(stdout.read())
-        cmd = self.shellJson.get('info').get('usb')
-        stdin, stdout, stderr = self.exe_cmd(cmd)
-        self.info_append('<================================= usb ========================================>')
-        self.info_append(stdout.read())
 
     def info_append(self, info):
         """附件内容到详情"""
@@ -551,12 +442,13 @@ class DevMonitor(QtCore.QThread):
                 need_refresh |= True
             if need_refresh:
                 self.signal_refresh_dev.emit()
-            time.sleep(1)
+            time.sleep(0.25)
 
 
 class Flash(QtCore.QThread):
     signal_flash = QtCore.pyqtSignal(int, str)
     stop = False
+    __cur_key = 0
     def __init__(self):
         QtCore.QThread.__init__(self)
 
@@ -564,14 +456,17 @@ class Flash(QtCore.QThread):
         self.checkeds = checkeds
 
     def send_msg(self, msg):
-        self.signal_flash.emit(0, msg)
+        self.signal_flash.emit(self.__cur_key, msg)
 
     def run(self):
         self.stop = False
-        for i, checked in enumerate(self.checkeds):
+        self.__cur_key = 0
+        for checked in self.checkeds:
             if self.stop:
                 return
-            androidutil.flash(FirmwareType(checked[0]).value, checked[1], self.send_msg)
+            self.__cur_key = checked[0]
+            self.signal_flash.emit(self.__cur_key, 'Flash ' + checked[1])
+            androidutil.flash(FirmwareType(checked[1]).value, checked[2], self.send_msg)
 
 
 class FirmwareType(Enum):

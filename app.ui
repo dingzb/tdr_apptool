@@ -223,7 +223,7 @@
           </column>
           <column>
            <property name="text">
-            <string>进度</string>
+            <string/>
            </property>
           </column>
           <column>
