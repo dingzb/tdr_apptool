@@ -9,6 +9,7 @@ import os
 from PyQt4 import QtGui, QtCore
 import paramiko
 from PyQt4.QtGui import QFileDialog
+from enum import Enum
 
 import SerialThread
 import androidutil
@@ -17,11 +18,13 @@ import _cffi_backend
 import ConnectionThread
 
 import sys
+
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-#TODO 刷机时传入刷机线程(firmware_path, slot)
-#TODO 刷机动画
+
+# TODO 刷机时传入刷机线程(firmware_path, slot)
+# TODO 刷机动画
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -36,6 +39,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonFirmwareRefresh.clicked.connect(self.refresh_firmwares)
         self.pushButtonRefreshSerial.clicked.connect(self.init_serial)
         self.pushButtonCheckSum.clicked.connect(self.get_checked)
+        self.pushButtonFlash.clicked.connect(self.flash_firmware_start)
         #######################################################################
         # self.pushButtonSaveServer.clicked.connect(self.set_server)
         # self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
@@ -55,6 +59,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         # json_file = open('shell.json')
         # self.shellJson = json.load(json_file, encoding='utf8')
         # json_file.close()
+        self.flash = Flash()
+        self.flash.signal_flash.connect(self.flash_firmware_info)
         self.init_serial()
         self.monitor_dev()
         self.init_table()
@@ -120,7 +126,6 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.comboBoxDevList.addItems(adbs)
         self.comboBoxDevList.addItems(fastboots)
         mode = self.get_dev_mode(adbs, fastboots)
-        print mode
         if 'adb' == mode:
             self.mode_adb_dis()
         elif 'fastboot' == mode:
@@ -175,24 +180,23 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonReboot.setEnabled(False)
 
     def select_firmware_dir(self):
-        self.lineEditFirmwareDir.setText(QFileDialog.getExistingDirectory(QtGui.QFileDialog(),u'选择固件位置'))
+        self.lineEditFirmwareDir.setText(QFileDialog.getExistingDirectory(QtGui.QFileDialog(), u'选择固件位置', u'D:\work\GoFun\刷机'))
         self.refresh_firmwares()
 
     def get_frimwar_list(self, dir=None):
         """这里暂时根据文件后缀筛选，后期考虑根据校验文件的固件列表获取文件并校验"""
         rs = []
-        system_img = 'system.img'
-        boot_img = 'boot.img'
-
+        system_img = FirmwareType.SYSTEM.value
+        boot_img = FirmwareType.BOOT.value
         if dir is None:
             dir = self.lineEditFirmwareDir.text()
         if not dir:
             return rs
         for f_n in os.listdir(dir):
-            if f_n == system_img:
-                rs.append(('system', dir + '\\' + f_n, '1.0'))
-            elif f_n == boot_img:
-                rs.append(('boot', dir + '\\' + f_n, '1.0'))
+            if system_img in f_n:
+                rs.append((system_img, dir + '\\' + f_n, '1.0'))
+            elif boot_img in f_n:
+                rs.append((boot_img, dir + '\\' + f_n, '1.0'))
         return rs
 
     def refresh_firmwares(self):
@@ -207,13 +211,27 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.tableWidget.setItem(rc, 1, QtGui.QTableWidgetItem(unicode(str(r[0]))))
             self.tableWidget.setItem(rc, 2, QtGui.QTableWidgetItem(unicode(str(r[1]))))
             self.tableWidget.setItem(rc, 3, QtGui.QTableWidgetItem(unicode(str(r[2]))))
-            #todo 添加刷机等待的动画
+            # self.tableWidget.setCellWidget(rc, 5, QtGui.Widget.QProgressBar(self))
+            # todo 添加刷机等待的动画
 
     def get_checked(self):
-       for i in range(0, self.tableWidget.rowCount()):
-           item_ck = self.tableWidget.item(i, 0)
-           if item_ck.checkState() == QtCore.Qt.Checked:
-               print self.tableWidget.item(i, 2).text()
+        checkeds = []
+        for i in range(0, self.tableWidget.rowCount()):
+            item_ck = self.tableWidget.item(i, 0)
+            if item_ck.checkState() == QtCore.Qt.Checked:
+                checkeds.append((str(self.tableWidget.item(i, 1).text()), str(self.tableWidget.item(i, 2).text())))
+        return checkeds
+
+    def flash_firmware_start(self):
+        self.flash.set_checkeds(self.get_checked())
+        self.flash.start()
+
+    def flash_firmware_stop(self):
+        self.flash.stop = True
+
+    def flash_firmware_info(self, stage, msg):
+        if msg:
+            self.textBrowserFlash.append('<div style="color: red;">' + msg + '</div>')
 
     ########################################################################################################
     def get_network_lan_cfg(self):
@@ -508,13 +526,15 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         # self.textBrowserLog.addAction(action_dump)
 
     def log_dump(self):
-        file_path = QtGui.QFileDialog.getSaveFileName(self,u'导出文件','log' ,'(*.*)')
+        file_path = QtGui.QFileDialog.getSaveFileName(self, u'导出文件', 'log', '(*.*)')
         log_file = open(file_path, 'w')
+
 
 class DevMonitor(QtCore.QThread):
     __adbs = None
     __fastboots = None
     signal_refresh_dev = QtCore.pyqtSignal()
+
     def __init__(self):
         QtCore.QThread.__init__(self)
 
@@ -531,15 +551,38 @@ class DevMonitor(QtCore.QThread):
                 need_refresh |= True
             if need_refresh:
                 self.signal_refresh_dev.emit()
-            time.sleep(0.25)
+            time.sleep(1)
 
 
+class Flash(QtCore.QThread):
+    signal_flash = QtCore.pyqtSignal(int, str)
+    stop = False
+    def __init__(self):
+        QtCore.QThread.__init__(self)
+
+    def set_checkeds(self, checkeds):
+        self.checkeds = checkeds
+
+    def send_msg(self, msg):
+        self.signal_flash.emit(0, msg)
+
+    def run(self):
+        self.stop = False
+        for i, checked in enumerate(self.checkeds):
+            if self.stop:
+                return
+            androidutil.flash(FirmwareType(checked[0]).value, checked[1], self.send_msg)
+
+
+class FirmwareType(Enum):
+    SYSTEM = 'system'
+    BOOT = 'boot'
 
 
 def main():
     app = QtGui.QApplication(sys.argv)
     window = MyApp()
-    window.setWindowTitle(u'门禁工具 V0.1')
+    window.setWindowTitle(u'GoFun工具 V0.1')
     window.show()
     sys.exit(app.exec_())
 
