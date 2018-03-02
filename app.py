@@ -245,12 +245,14 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
     def flash_firmware_info(self, stage, status, msg):
         """
-
-        :param stage:
+        :param stage: -1: unlock failed. other: index of firmware in the table.
         :param status: 0:normal, 1:success, -1:failed
         :param msg:
         :return:
         """
+        if stage == -1:
+            self.show_warning(u'解锁失败。')
+            return
         if status == 1: # flash finished.
             self.mode_flash(False)
             self.flash_firmware_status(stage, True)
@@ -258,7 +260,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.flash_firmware_status(stage, False)
         if not msg:
             return
-        self.textBrowserFlash.append('<div style="color: red;">' + msg + '</div>')
+        self.textBrowserFlash.append('<div>' + msg + '</div>')
         progress = self.tableWidget.cellWidget(stage, 5)
         if re.match(r'^target reported', msg):
             progress.setValue(0)
@@ -429,9 +431,38 @@ class Flash(QtCore.QThread):
     def send_msg(self, msg):
         self.signal_flash.emit(self.__cur_key, 0, msg)
 
+    def __flash_unlock(self):
+        count = 10
+        while count > 0:
+            count -= 1
+            pass_c, pass_s = androidutil.exe_fastboot('oem passwd TdrGofun@0129')
+            if pass_c == 0:
+                unlock_c, unlock_s = androidutil.exe_fastboot('oem unlock-go')
+                if unlock_c == 0:
+                    count = -1
+                    continue
+            time.sleep(0.25)
+        return count == -1
+
+    def __flash_lock(self):
+        count = 10
+        while count > 0:
+            count -= 1
+            shipment_c, shipment_s = androidutil.exe_fastboot('oem shipment TdrGofun@0129')
+            if shipment_c == 0:
+                lock_c, lock_s = androidutil.exe_fastboot('oem lock')
+                if lock_c == 0:
+                    count = -1
+                    continue
+            time.sleep(0.25)
+        return count == -1
+
     def run(self):
         self.stop = False
         self.__cur_key = 0
+        if not self.__flash_unlock():
+            self.signal_flash.emit(-1, 0, 'Unlock failed.')
+            return
         for checked in self.checkeds:
             if self.stop:
                 return
@@ -445,7 +476,9 @@ class Flash(QtCore.QThread):
                 self.signal_flash.emit(self.__cur_key, -1, 'Flash failed.')
             else:
                 self.signal_flash.emit(self.__cur_key, 1, 'Flash success.')
-            time.sleep(0.25)
+        if not self.__flash_lock():
+            self.signal_flash.emit(-1, 0, 'Lock failed.')
+
 
 
 def main():

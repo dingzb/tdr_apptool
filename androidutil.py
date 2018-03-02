@@ -26,9 +26,15 @@ def exe_cmd2(cmd, stdout_fn = None):
         line = p.stdout.readline()
         if p.stdout:
             if stdout_fn:
-                print line,
                 stdout_fn(line)
             rs += line
+    line_last = p.stdout.read()
+    if stdout_fn:
+        stdout_fn(line_last)
+    rs += line_last
+    if stdout_fn:
+        print '<================>'
+        print rs
     return p.returncode, rs
 
 def exe_adb(cmd):
