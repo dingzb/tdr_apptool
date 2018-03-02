@@ -432,30 +432,34 @@ class Flash(QtCore.QThread):
         self.signal_flash.emit(self.__cur_key, 0, msg)
 
     def __flash_unlock(self):
-        count = 10
-        while count > 0:
-            count -= 1
-            pass_c, pass_s = androidutil.exe_fastboot('oem passwd TdrGofun@0129')
-            if pass_c == 0:
-                unlock_c, unlock_s = androidutil.exe_fastboot('oem unlock-go')
-                if unlock_c == 0:
-                    count = -1
-                    continue
-            time.sleep(0.25)
-        return count == -1
+        pass_c, pass_s = androidutil.exe_fastboot('oem passwd TdrGofun@0129')
+        if pass_c == 0:
+            unlock_c, unlock_s = androidutil.exe_fastboot('oem unlock-go')
+            return unlock_c == 0
+        # count = 10
+        # while count > 0:
+        #     count -= 1
+        #     pass_c, pass_s = androidutil.exe_fastboot('oem passwd TdrGofun@0129')
+        #     if pass_c == 0:
+        #         unlock_c, unlock_s = androidutil.exe_fastboot('oem unlock-go')
+        #         if unlock_c == 0:
+        #             count = -1
+        #             continue
+        #     time.sleep(0.25)
+        # return count == -1
 
     def __flash_lock(self):
-        count = 10
-        while count > 0:
-            count -= 1
-            shipment_c, shipment_s = androidutil.exe_fastboot('oem shipment TdrGofun@0129')
-            if shipment_c == 0:
-                lock_c, lock_s = androidutil.exe_fastboot('oem lock')
-                if lock_c == 0:
-                    count = -1
-                    continue
-            time.sleep(0.25)
-        return count == -1
+        shipment_c, shipment_s = androidutil.exe_fastboot('oem shipment')
+        return shipment_c == 0
+        # count = 10
+        # while count > 0:
+        #     count -= 1
+        #     shipment_c, shipment_s = androidutil.exe_fastboot('oem shipment')
+        #     if shipment_c == 0:
+        #         count = -1
+        #         continue
+        #     time.sleep(0.25)
+        # return count == -1
 
     def run(self):
         self.stop = False
