@@ -16,10 +16,10 @@ py2exe_options = {
 }
 
 setup(
-    name='mj tool',
+    name='GoFun Tool',
     version='0.1',
     windows=['app.py', ],
     zipfile=None,
     options={'py2exe': py2exe_options},
-    data_files = [('',['shell.json'])]
+    data_files = [('adb',['adb/adb.exe', 'adb/AdbWinApi.dll', 'adb/AdbWinUsbApi.dll', 'adb/fastboot.exe'])]
 )

@@ -23,8 +23,9 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 
-# TODO 刷机时传入刷机线程(firmware_path, slot)
-# TODO 刷机动画
+# TODO 全选
+# TODO 刷机失败时提示
+# TODO 返回信息不全（没有预期的 finished 语句返回）导致进度显示失败
 
 class MyApp(QtGui.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -39,22 +40,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonFirmwareRefresh.clicked.connect(self.refresh_firmwares)
         self.pushButtonRefreshSerial.clicked.connect(self.init_serial)
         self.pushButtonCheckSum.clicked.connect(self.get_checked)
+        self.pushButtonSelectAll.clicked.connect(self.check_all_y)
+        self.pushButtonSelectAllCancell.clicked.connect(self.check_all_n)
         self.pushButtonFlash.clicked.connect(self.flash_firmware_start)
-        #######################################################################
-        # self.pushButtonSaveServer.clicked.connect(self.set_server)
-        # self.pushButtonRefreshServer.clicked.connect(self.get_server_cfg)
-        # self.pushButtonRefreshInfo.clicked.connect(self.get_info)
-        # self.pushButtonWanRefresh.clicked.connect(self.get_network_wan_cfg)
-        # self.pushButtonWanSave.clicked.connect(self.set_network_wan_cfg)
-        # self.radioButtonWanStatic.toggled.connect(self.set_network_wan_static_enable)
-        # self.pushButtonLanRefresh.clicked.connect(self.get_network_lan_cfg)
-        # self.pushButtonLanSave.clicked.connect(self.set_network_lan_cfg)
         self.cmdlineEdit.returnPressed.connect(self.run_cmd)
-        # self.actionExit.triggered.connect(self.close)
+        self.actionExit.triggered.connect(self.close)
         self.text_browser_context_menu()
-        # self.ssh_client = paramiko.SSHClient()
-        # self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # self.connection = ConnectionThread.Connection(self.ssh_client, self.log_append_msg, self.log_append_err, self.log_append_std)
         self.serial_conn = SerialThread.Connection(self.log_append_msg, self.log_append_err, self.log_append_std)
         # json_file = open('shell.json')
         # self.shellJson = json.load(json_file, encoding='utf8')
@@ -72,6 +63,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.tableWidget.setColumnWidth(3, 80)
         self.tableWidget.setColumnWidth(4, 80)
         self.tableWidget.setColumnWidth(5, 180)
+        self.tableWidget.setColumnWidth(6, 80)
 
     def init_serial(self):
         ports, baudrates, parities, bytesizes, stopbits, flowcontrols = self.serial_conn.get_serial_cfg_available()
@@ -179,32 +171,34 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.pushButtonFlash.setEnabled(False)
         self.pushButtonReboot.setEnabled(False)
 
+    def mode_flash(self, flash):
+        self.pushButtonFirmwareDir.setEnabled(not flash)
+        self.pushButtonFirmwareRefresh.setEnabled(not flash)
+        self.pushButtonCheckSum.setEnabled(not flash)
+
     def select_firmware_dir(self):
-        self.lineEditFirmwareDir.setText(QFileDialog.getExistingDirectory(QtGui.QFileDialog(), u'选择固件位置', u'D:\work\GoFun\刷机'))
+        self.lineEditFirmwareDir.setText(QFileDialog.getExistingDirectory(QtGui.QFileDialog(), u'选择固件位置', u'D:\work\GoFun\刷机\oem_sec_images'))
         self.refresh_firmwares()
 
-    def get_frimwar_list(self, dir=None):
-        """这里暂时根据文件后缀筛选，后期考虑根据校验文件的固件列表获取文件并校验"""
+    def get_firmware_list(self):
         rs = []
-        system_img = FirmwareType.SYSTEM.value
-        boot_img = FirmwareType.BOOT.value
-        if dir is None:
-            dir = self.lineEditFirmwareDir.text()
+        dir = self.lineEditFirmwareDir.text()
         if not dir:
             return rs
-        rs.append((system_img, 'D:\\work\\GoFun\\system.img', '1.0'))
-        rs.append((boot_img, 'D:\\work\\GoFun\\boot.img', '1.0'))
-        # for f_n in os.listdir(dir):
-        #     if system_img in f_n:
-        #         rs.append((system_img, dir + '\\' + f_n, '1.0'))
-        #     elif boot_img in f_n:
-        #         rs.append((boot_img, dir + '\\' + f_n, '1.0'))
+        if not os.path.isfile(dir + os.path.sep  + 'list.txt'):
+            return rs
+        f = open(dir + os.path.sep  + 'list.txt')
+        for l in iter(f):
+            if l:
+                la = l.strip().split()
+                la[1] = dir + os.path.sep + la[1]
+                rs.append(la)
         return rs
 
     def refresh_firmwares(self):
         self.tableWidget.setRowCount(0)
         self.tableWidget.clearContents()
-        for r in self.get_frimwar_list():
+        for r in self.get_firmware_list():
             rc = self.tableWidget.rowCount()
             self.tableWidget.insertRow(rc)
             item = QtGui.QTableWidgetItem()
@@ -213,6 +207,16 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.tableWidget.setItem(rc, 1, QtGui.QTableWidgetItem(unicode(str(r[0]))))
             self.tableWidget.setItem(rc, 2, QtGui.QTableWidgetItem(unicode(str(r[1]))))
             self.tableWidget.setItem(rc, 3, QtGui.QTableWidgetItem(unicode(str(r[2]))))
+
+    def check_all_y(self):
+        self.check_all(True)
+
+    def check_all_n(self):
+        self.check_all(False)
+
+    def check_all(self, s):
+        for i in range(0, self.tableWidget.rowCount()):
+            self.tableWidget.item(i, 0).setCheckState(QtCore.Qt.Checked if s else QtCore.Qt.Unchecked)
 
     def get_checked(self):
         checkeds = []
@@ -224,19 +228,34 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
 
     def flash_firmware_start(self):
         checkeds = self.get_checked()
+        if len(checkeds) == 0:
+            self.show_warning(u'请至少选择一项')
+            return
         for checked in checkeds:
             progress = QtGui.QProgressBar(self)
             progress.setAlignment(QtCore.Qt.AlignHCenter)
             progress.setMinimum(0)
             self.tableWidget.setCellWidget(checked[0], 5, progress)
-        time.sleep(0.01) # table设置进度条和刷机都是多线程进行的，要保证进度条设置完成后在开始刷机
+        self.mode_flash(True)
         self.flash.set_checkeds(checkeds)
         self.flash.start()
 
     def flash_firmware_stop(self):
         self.flash.stop = True
 
-    def flash_firmware_info(self, stage, msg):
+    def flash_firmware_info(self, stage, status, msg):
+        """
+
+        :param stage:
+        :param status: 0:normal, 1:success, -1:failed
+        :param msg:
+        :return:
+        """
+        if status == 1: # flash finished.
+            self.mode_flash(False)
+            self.flash_firmware_status(stage, True)
+        elif status == -1:
+            self.flash_firmware_status(stage, False)
         if not msg:
             return
         self.textBrowserFlash.append('<div style="color: red;">' + msg + '</div>')
@@ -259,96 +278,18 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             progress.setValue(85)
         elif re.match(r'^finished. total time', msg):
             progress.setValue(100)
-    ########################################################################################################
 
-    def info_append(self, info):
-        """附件内容到详情"""
-        self.textBrowserInfo.append(str(info))
-
-    def info_clear(self):
-        """清空详情内容"""
-        self.textBrowserInfo.clear()
-
-    def fill_server_cfg(self, info):
-        """填充服务器配置表单"""
-        kvs = info.split('\n')
-        for i, kv in enumerate(kvs):
-            kvs[i] = kv.split('=')
-        ks = self.shellJson.get('keys').get('setting').get('server')
-        u_ip = self.get_cfg_f_tuple(ks.get('upgradeIp'), kvs)
-        u_port = self.get_cfg_f_tuple(ks.get('upgradePort'), kvs)
-        o_ip = self.get_cfg_f_tuple(ks.get('operationIp'), kvs)
-        o_port = self.get_cfg_f_tuple(ks.get('operationPort'), kvs)
-        i_ip = self.get_cfg_f_tuple(ks.get('idcardIp'), kvs)
-        i_port = self.get_cfg_f_tuple(ks.get('idcardPort'), kvs)
-        l_url = self.get_cfg_f_tuple(ks.get('logsrvUrl'), kvs)
-        self.LineEditUpdateIp.setText(u_ip)
-        self.LineEditUpdatePort.setText(u_port)
-        self.LineEditOperationIp.setText(o_ip)
-        self.LineEditOperationPort.setText(o_port)
-        self.LineEditIdCardIp.setText(i_ip)
-        self.LineEditIdCardPort.setText(i_port)
-        self.LineEditLogURL.setText(l_url)
-
-    def get_cfg_f_tuple(self, k, kvs):
-        """
-        从Tuple数组中获取服务器配置信息
-        :param k: key
-        :param kvs: tuple array
-        :return: kv[1]
-        """
-        for kv in kvs:
-            if kv[0] == k:
-                return kv[1].replace("'", "")
-
-    def set_server(self):
-        """设置服务器配置"""
-        vr = self.validate_server_cfg()
-        if not vr[0]:
-            self.show_warning(vr[1])
-            return
-        settings = vr[1]
-        cmd = str(self.shellJson.get('setting').get('server').get('set'))
-        ks = self.shellJson.get('keys').get('setting').get('server')
-        self.exe_cmd(str.format(cmd, ks.get('operationIp'), str(settings[0])))
-        self.exe_cmd(str.format(cmd, ks.get('operationPort'), str(settings[1])))
-        self.exe_cmd(str.format(cmd, ks.get('upgradeIp'), str(settings[2])))
-        self.exe_cmd(str.format(cmd, ks.get('upgradePort'), str(settings[3])))
-        self.exe_cmd(str.format(cmd, ks.get('idcardIp'), str(settings[4])))
-        self.exe_cmd(str.format(cmd, ks.get('idcardPort'), str(settings[5])))
-        self.exe_cmd(str.format(cmd, ks.get('logsrvUrl'), str(settings[6])))
-        self.exe_cmd(self.shellJson.get('setting').get('server').get('commit'))
-        self.show_status_bar_msg(u'配置生效需要重启')
-
-    def validate_server_cfg(self):
-        """校验服务器配置有效性"""
-        o_ip = self.LineEditOperationIp.text()
-        o_port = self.LineEditOperationPort.text()
-        u_ip = self.LineEditUpdateIp.text()
-        u_port = self.LineEditUpdatePort.text()
-        i_ip = self.LineEditIdCardIp.text()
-        i_port = self.LineEditIdCardPort.text()
-        l_url = self.LineEditLogURL.text()
-        if not self.validate_ip(o_ip):
-            return False, u'业务服务器IP格式错误'
-        if not self.validate_port(o_port):
-            return False, u'业务服务器端口格式错误'
-        if not self.validate_ip(u_ip):
-            return False, u'升级服务器IP格式错误'
-        if not self.validate_port(u_port):
-            return False, u'升级服务器端口格式错误'
-        if not self.validate_ip(i_ip):
-            return False, u'身份证服务器IP格式错误'
-        if not self.validate_port(i_port):
-            return False, u'身份证服务器端口格式错误'
-        if not self.validate_url(l_url):
-            return False, u'日志服务器URL格式错误'
-        return True, (o_ip, o_port, u_ip, u_port, i_ip, i_port, l_url)
-
-    def re_boot(self):
-        self.exe_cmd('reboot')
-        self.dis_connect_dev()
-        self.connect_enable(False)
+    def flash_firmware_status(self, stage, s):
+        item = QtGui.QTableWidgetItem()
+        item.setTextAlignment(QtCore.Qt.AlignHCenter)
+        if s:
+            item.setText(u'成功')
+            item.setBackgroundColor(QtCore.Qt.green)
+        else:
+            item.setText(u'失败')
+            item.setBackgroundColor(QtCore.Qt.red)
+        self.tableWidget.setItem(stage, 6, item)
+#############################################################################################
 
     def dis_connect_dev(self):
         self.ssh_client.close()
@@ -377,30 +318,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.log_append('> ' + cmd, 'green')
         return self.ssh_client.exec_command(cmd)
 
-    def validate_ip(self, ip):
-        pattern = r'^(?:(?:1[0-9][0-9]\.)|(?:2[0-4][0-9]\.)|(?:25[0-5]\.)|(?:[1-9][0-9]\.)|(?:[0-9]\.)){3}(?:(?:1[0-9][0-9])|(?:2[0-4][0-9])|(?:25[0-5])|(?:[1-9][0-9])|(?:[0-9]))$'
-        return re.match(pattern, str(ip))
-
-    def validate_port(self, port):
-        pattern = r'^\d{2,5}$'
-        return re.match(pattern, str(port))
-
-    def validate_url(self, url):
-        pattern = r'((https?|ftp|file)://)?[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]'
-        return re.match(pattern, str(url))
-
-    def validate_mask(self, mask):
-        pattern = r'^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])(\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])){3}$'
-        return re.match(pattern, str(mask))
-
     def show_warning(self, warn):
         warn_dialog = QtGui.QErrorMessage()
         warn_dialog.showMessage(warn)
         warn_dialog.setWindowTitle(u"错误")
         warn_dialog.exec_()
-
-    def show_status_bar_msg(self, msg):
-        self.statusBar.showMessage(msg)
 
     def text_browser_context_menu(self):
         """
@@ -445,8 +367,57 @@ class DevMonitor(QtCore.QThread):
             time.sleep(0.25)
 
 
+class FirmwareType(object):
+    """支持的类型，防止列表文件修改错误造成刷机问题"""
+    SBL1 = 'sbl1'
+    RPM = 'rpm'
+    TZ = 'tz'
+    ABOOT = 'aboot'
+    SBL1BAK = 'sbl1bak'
+    RPMBAK = 'rpmbak'
+    TZBAK = 'tzbak'
+    ABOOTBAK = 'abootbak'
+    BOOT = 'boot'
+    SPLASH = 'splash'
+    SEC = 'sec'
+    MODEM = 'modem'
+    SYSTEM = 'system'
+    USERDATA = 'userdata'
+    PERSIST = 'persist'
+    CACHE = 'cache'
+    RECOVERY = 'recovery'
+    PRIVDATA1 = 'privdata1'
+    PRIVDATA2 = 'privdata2'
+
+    __map = {
+        'sbl1': SBL1,
+        'rpm': RPM,
+        'tz': TZ,
+        'aboot': ABOOT,
+        'sbl1bak': SBL1BAK,
+        'rpmbak': RPMBAK,
+        'tzbak': TZBAK,
+        'abootbak': ABOOTBAK,
+        'boot': BOOT,
+        'splash': SPLASH,
+        'sec': SEC,
+        'modem': MODEM,
+        'system': SYSTEM,
+        'userdata': USERDATA,
+        'persist': PERSIST,
+        'cache': CACHE,
+        'recovery': RECOVERY,
+        'privdata1': PRIVDATA1,
+        'privdata2': PRIVDATA2
+    }
+
+    @classmethod
+    def of(cls, v):
+        return cls.__map.get(v)
+
+
 class Flash(QtCore.QThread):
-    signal_flash = QtCore.pyqtSignal(int, str)
+    signal_flash = QtCore.pyqtSignal(int, int, str)
     stop = False
     __cur_key = 0
     def __init__(self):
@@ -456,7 +427,7 @@ class Flash(QtCore.QThread):
         self.checkeds = checkeds
 
     def send_msg(self, msg):
-        self.signal_flash.emit(self.__cur_key, msg)
+        self.signal_flash.emit(self.__cur_key, 0, msg)
 
     def run(self):
         self.stop = False
@@ -465,13 +436,16 @@ class Flash(QtCore.QThread):
             if self.stop:
                 return
             self.__cur_key = checked[0]
-            self.signal_flash.emit(self.__cur_key, 'Flash ' + checked[1])
-            androidutil.flash(FirmwareType(checked[1]).value, checked[2], self.send_msg)
-
-
-class FirmwareType(Enum):
-    SYSTEM = 'system'
-    BOOT = 'boot'
+            self.signal_flash.emit(self.__cur_key, 0, 'Flash ' + checked[1])
+            tp = FirmwareType.of(checked[1])
+            if tp is None:
+                continue
+            rc, rv = androidutil.flash(tp, checked[2], self.send_msg)
+            if rc != 0:
+                self.signal_flash.emit(self.__cur_key, -1, 'Flash failed.')
+            else:
+                self.signal_flash.emit(self.__cur_key, 1, 'Flash success.')
+            time.sleep(0.25)
 
 
 def main():
