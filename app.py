@@ -444,9 +444,6 @@ class Flash(QtCore.QThread):
     def run(self):
         self.stop = False
         self.__cur_key = 0
-        if not self.__flash_unlock():
-            self.signal_flash.emit(-1, 0, 'Unlock failed.')
-            return
         for checked in self.checkeds:
             if self.stop:
                 return
@@ -460,15 +457,12 @@ class Flash(QtCore.QThread):
                 self.signal_flash.emit(self.__cur_key, -1, 'Flash failed.')
             else:
                 self.signal_flash.emit(self.__cur_key, 1, 'Flash success.')
-        if not self.__flash_lock():
-            self.signal_flash.emit(-1, 0, 'Lock failed.')
-
 
 
 def main():
     app = QtGui.QApplication(sys.argv)
     window = MyApp()
-    window.setWindowTitle(u'GoFun工具 V0.1')
+    window.setWindowTitle(u'GoFun工具 V1.0')
     window.show()
     sys.exit(app.exec_())
 
