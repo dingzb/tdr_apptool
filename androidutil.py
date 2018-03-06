@@ -32,9 +32,6 @@ def exe_cmd2(cmd, stdout_fn = None):
     if stdout_fn:
         stdout_fn(line_last)
     rs += line_last
-    if stdout_fn:
-        print '<================>'
-        print rs
     return p.returncode, rs
 
 def exe_adb(cmd):
