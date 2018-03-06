@@ -55,6 +55,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.init_serial()
         self.monitor_dev()
         self.init_table()
+        self.init_log()
+
+    def init_log(self):
+        self.textBrowserLog.document().setMaximumBlockCount(2048)
+        self.textBrowserFlash.document().setMaximumBlockCount(1024)
 
     def init_table(self):
         self.tableWidget.setColumnWidth(0, 20)
