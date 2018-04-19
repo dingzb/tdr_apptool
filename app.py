@@ -189,6 +189,11 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         stdin, stdout, stderr = self.exe_cmd(cmd)
         self.info_append('<================================ version =====================================>')
         self.info_append(stdout.read())
+
+        cmd = self.shellJson.get('info').get('pr11version')
+        stdin, stdout, stderr = self.exe_cmd(cmd)
+        self.info_append('pr11-version: ' + stdout.read())
+
         cmd = self.shellJson.get('info').get('usb')
         stdin, stdout, stderr = self.exe_cmd(cmd)
         self.info_append('<================================= usb ========================================>')

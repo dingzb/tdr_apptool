@@ -2,6 +2,7 @@
   "info": {
     "network": "uci show tdripcfg | grep tdripcfg | grep -v data",
     "version": "uci show tdripcfg | grep ':' | grep -v tdripcfg | grep -v 'usb list info' | grep -v 'Bus'",
+    "pr11version": "size=`wc -c /tmp/pc02321/version-pr11 | awk  '{ print $1 }' 2>/dev/null`; version_len=`expr $size - 64`; version=`head -c $version_len /tmp/pc02321/version-pr11`; echo $version",
     "usb": "lsusb"
   },
   "setting": {
